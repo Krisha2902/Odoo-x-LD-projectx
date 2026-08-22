@@ -13,7 +13,6 @@ export default function ExplorePage() {
       rating: "4.95 ⭐",
       desc: "Immerse yourself in lush terraced rice fields, ancient sea temples, turquoise ocean waves, and spiritual wellness retreats.",
       bgImage: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1920&q=80",
-      thumbnail: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=600&q=80",
     },
     {
       id: "dest-2",
@@ -23,7 +22,6 @@ export default function ExplorePage() {
       rating: "4.92 ⭐",
       desc: "Discover dramatic limestone karsts rising out of emerald Andaman waters, vibrant street night markets, and golden Buddhist pagodas.",
       bgImage: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80",
-      thumbnail: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80",
     },
     {
       id: "dest-3",
@@ -33,7 +31,6 @@ export default function ExplorePage() {
       rating: "4.98 ⭐",
       desc: "Cruise serene palm-fringed backwaters on traditional houseboats, witness Ayurvedic wellness, and explore misty tea gardens in Munnar.",
       bgImage: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=1920&q=80",
-      thumbnail: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=600&q=80",
     },
     {
       id: "dest-4",
@@ -43,7 +40,6 @@ export default function ExplorePage() {
       rating: "4.96 ⭐",
       desc: "Soak in panoramic snow-capped Matterhorn views, glacial lakes, world-class alpine skiing, and luxury mountain railways.",
       bgImage: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1920&q=80",
-      thumbnail: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=600&q=80",
     },
     {
       id: "dest-5",
@@ -53,7 +49,6 @@ export default function ExplorePage() {
       rating: "4.89 ⭐",
       desc: "Wander historic Haussmann boulevards, admire Louvre artistic treasures, and experience Michelin-starred dining under the Eiffel Tower.",
       bgImage: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1920&q=80",
-      thumbnail: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=600&q=80",
     },
     {
       id: "dest-6",
@@ -63,7 +58,6 @@ export default function ExplorePage() {
       rating: "4.97 ⭐",
       desc: "Experience the harmonious blend of ancient cherry blossom shrines, traditional tea ceremonies, and neon-lit futuristic metropolis.",
       bgImage: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1920&q=80",
-      thumbnail: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=600&q=80",
     },
   ];
 
@@ -102,7 +96,7 @@ export default function ExplorePage() {
       <PlaneCursor />
       <Navbar />
 
-      {/* 1. SYNCHRONIZED HERO BACKDROP WITH SMOOTH ANIMATE PRESENCE CROSSFADE */}
+      {/* 1. FULL-SCREEN CINEMATIC HERO BACKDROP CROSSFADE */}
       <div className="absolute inset-0 z-0 overflow-hidden">
         <AnimatePresence mode="popLayout">
           <motion.div
@@ -131,152 +125,96 @@ export default function ExplorePage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
-            <span className="text-xs font-black uppercase tracking-widest text-cyan-300 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
+            <span className="text-xs font-black uppercase tracking-widest text-cyan-300 bg-black/40 backdrop-blur-md px-3.5 py-1 rounded-full border border-white/10">
               CINEMATIC DESTINATION SHOWCASE
             </span>
           </div>
 
-          <div className="text-xs font-bold text-zinc-400">
+          <div className="text-xs font-bold text-zinc-400 bg-black/40 backdrop-blur-md px-3.5 py-1 rounded-full border border-white/10">
             <span className="text-cyan-400 font-extrabold text-sm">0{activeIndex + 1}</span> / 0
             {destinations.length}
           </div>
         </div>
 
-        {/* MIDDLE GRID LAYOUT: LEFT HERO TEXT REVEAL & RIGHT FLOATING QUEUE CAROUSEL */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center my-auto py-6">
-          {/* LEFT SIDE: HERO TITLE & STAGGER TEXT REVEAL (7 COLS) */}
-          <div className="lg:col-span-7 text-left pr-0 lg:pr-6">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeDest.id}
-                initial={{ opacity: 0, y: 35 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -30 }}
-                transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-                className="space-y-4"
-              >
-                {/* Location Pill Tag */}
-                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/20 border border-cyan-400/40 backdrop-blur-md text-cyan-300 text-xs font-black uppercase tracking-widest shadow">
-                  <span>{activeDest.tag}</span>
-                </div>
+        {/* HERO TITLE & TEXT REVEAL SECTION */}
+        <div className="my-auto py-6 max-w-3xl text-left">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeDest.id}
+              initial={{ opacity: 0, y: 35 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -30 }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              className="space-y-4"
+            >
+              {/* Location Pill Tag */}
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/20 border border-cyan-400/40 backdrop-blur-md text-cyan-300 text-xs font-black uppercase tracking-widest shadow">
+                <span>{activeDest.tag}</span>
+              </div>
 
-                {/* Staggered Destination Title */}
-                <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black uppercase tracking-tight text-white leading-none drop-shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
-                  {activeDest.title}
-                </h1>
+              {/* Destination Title */}
+              <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black uppercase tracking-tight text-white leading-none drop-shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
+                {activeDest.title}
+              </h1>
 
-                {/* Subtitle / Descriptive Snippet */}
-                <p className="text-sm sm:text-base text-zinc-200 font-medium max-w-xl leading-relaxed drop-shadow">
-                  {activeDest.desc}
-                </p>
+              {/* Subtitle / Description */}
+              <p className="text-sm sm:text-base text-zinc-200 font-medium max-w-xl leading-relaxed drop-shadow">
+                {activeDest.desc}
+              </p>
 
-                {/* Frosted Glass CTA Button */}
-                <div className="pt-4 flex flex-wrap items-center gap-4">
-                  <button
-                    onClick={() => setSelectedDetailModal(activeDest)}
-                    className="px-8 py-3.5 rounded-full bg-white/15 hover:bg-cyan-400 hover:text-slate-950 text-white font-extrabold text-xs uppercase tracking-wider backdrop-blur-xl border border-white/30 shadow-[0_10px_30px_rgba(0,0,0,0.4)] hover:shadow-[0_0_25px_rgba(0,212,255,0.6)] active:scale-95 transition-all cursor-pointer flex items-center gap-2"
-                  >
-                    <span>Explore Destination</span>
-                    <span className="text-sm">→</span>
-                  </button>
+              {/* Frosted Glass CTA Button */}
+              <div className="pt-4 flex flex-wrap items-center gap-4">
+                <button
+                  onClick={() => setSelectedDetailModal(activeDest)}
+                  className="px-8 py-3.5 rounded-full bg-white/15 hover:bg-cyan-400 hover:text-slate-950 text-white font-extrabold text-xs uppercase tracking-wider backdrop-blur-xl border border-white/30 shadow-[0_10px_30px_rgba(0,0,0,0.4)] hover:shadow-[0_0_25px_rgba(0,212,255,0.6)] active:scale-95 transition-all cursor-pointer flex items-center gap-2"
+                >
+                  <span>Explore Destination</span>
+                  <span className="text-sm">→</span>
+                </button>
 
-                  <button
-                    onClick={(e) => toggleBookmark(activeDest.id, e)}
-                    className="p-3.5 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 transition-all cursor-pointer"
-                    title="Bookmark Destination"
-                  >
-                    <span>{bookmarked[activeDest.id] ? "❤️" : "🤍"}</span>
-                  </button>
-                </div>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-
-          {/* RIGHT SIDE: FLOATING QUEUE CAROUSEL OF UPCOMING DESTINATION THUMBNAILS (5 COLS) */}
-          <div className="lg:col-span-5 flex items-center justify-end overflow-visible">
-            <div className="flex gap-4 overflow-x-auto custom-scrollbar py-4 px-2 max-w-full">
-              {destinations.map((dest, idx) => {
-                const isActive = idx === activeIndex;
-                return (
-                  <motion.div
-                    key={dest.id}
-                    layoutId={`thumb-${dest.id}`}
-                    onClick={() => setActiveIndex(idx)}
-                    whileHover={{ scale: 1.05, y: -6 }}
-                    whileTap={{ scale: 0.95 }}
-                    className={`relative min-w-[150px] sm:min-w-[170px] h-[230px] rounded-2xl overflow-hidden cursor-pointer border transition-all duration-300 flex flex-col justify-between p-3 text-left shadow-2xl flex-shrink-0 ${
-                      isActive
-                        ? "border-cyan-400 ring-4 ring-cyan-400/30 scale-105 shadow-[0_0_30px_rgba(0,212,255,0.4)]"
-                        : "border-white/20 opacity-75 hover:opacity-100 hover:border-white/50"
-                    }`}
-                  >
-                    {/* Thumbnail Image */}
-                    <img
-                      src={dest.thumbnail}
-                      alt={dest.title}
-                      className="absolute inset-0 w-full h-full object-cover -z-10 brightness-75"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent -z-10" />
-
-                    {/* Top Pill & Bookmark */}
-                    <div className="flex items-center justify-between z-10">
-                      <span className="bg-black/60 backdrop-blur-md rounded-full px-2 py-0.5 text-[9px] font-black text-cyan-300 border border-white/20">
-                        {dest.rating}
-                      </span>
-                      <button
-                        onClick={(e) => toggleBookmark(dest.id, e)}
-                        className="text-xs hover:scale-125 transition-transform"
-                      >
-                        {bookmarked[dest.id] ? "❤️" : "🤍"}
-                      </button>
-                    </div>
-
-                    {/* Bottom Title Tag */}
-                    <div className="z-10">
-                      <span className="text-[9px] font-bold text-zinc-300 uppercase tracking-wider block">
-                        {dest.country}
-                      </span>
-                      <strong className="text-sm font-black text-white uppercase tracking-tight block">
-                        {dest.title}
-                      </strong>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </div>
+                <button
+                  onClick={(e) => toggleBookmark(activeDest.id, e)}
+                  className="p-3.5 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 transition-all cursor-pointer"
+                  title="Bookmark Destination"
+                >
+                  <span>{bookmarked[activeDest.id] ? "❤️" : "🤍"}</span>
+                </button>
+              </div>
+            </motion.div>
+          </AnimatePresence>
         </div>
 
         {/* BOTTOM NAVIGATION CONTROLS & PAGINATION DOTS */}
         <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-white/10">
           {/* Pagination Indicators (Dots) */}
-          <div className="flex items-center gap-2">
-            {destinations.map((_, idx) => (
+          <div className="flex items-center gap-2.5">
+            {destinations.map((dest, idx) => (
               <button
-                key={idx}
+                key={dest.id}
                 onClick={() => setActiveIndex(idx)}
-                className={`h-2 rounded-full transition-all cursor-pointer ${
+                className={`h-2.5 rounded-full transition-all cursor-pointer ${
                   activeIndex === idx
-                    ? "w-8 bg-cyan-400 shadow-[0_0_10px_rgba(0,212,255,0.8)]"
-                    : "w-2 bg-white/30 hover:bg-white/60"
+                    ? "w-9 bg-cyan-400 shadow-[0_0_12px_rgba(0,212,255,0.9)]"
+                    : "w-2.5 bg-white/30 hover:bg-white/60"
                 }`}
+                title={dest.title}
               />
             ))}
           </div>
 
-          {/* Next / Prev Arrow Buttons */}
+          {/* Next / Prev Arrow Controls */}
           <div className="flex items-center gap-3">
             <button
               onClick={handlePrev}
-              className="w-11 h-11 rounded-full bg-slate-900/80 hover:bg-cyan-500 hover:text-slate-950 border border-white/20 flex items-center justify-center text-white text-sm font-black transition-all cursor-pointer shadow-lg active:scale-90"
-              title="Previous Destination"
+              className="w-12 h-12 rounded-full bg-slate-900/80 hover:bg-cyan-500 hover:text-slate-950 border border-white/20 flex items-center justify-center text-white text-base font-black transition-all cursor-pointer shadow-lg active:scale-90 backdrop-blur-md"
+              title="Previous Destination (Left Arrow)"
             >
               ←
             </button>
             <button
               onClick={handleNext}
-              className="w-11 h-11 rounded-full bg-cyan-400 hover:bg-cyan-300 text-slate-950 border border-cyan-300 flex items-center justify-center text-sm font-black transition-all cursor-pointer shadow-[0_0_20px_rgba(0,212,255,0.5)] active:scale-90"
-              title="Next Destination"
+              className="w-12 h-12 rounded-full bg-cyan-400 hover:bg-cyan-300 text-slate-950 border border-cyan-300 flex items-center justify-center text-base font-black transition-all cursor-pointer shadow-[0_0_20px_rgba(0,212,255,0.6)] active:scale-90"
+              title="Next Destination (Right Arrow)"
             >
               →
             </button>
@@ -284,7 +222,7 @@ export default function ExplorePage() {
         </div>
       </main>
 
-      {/* DESTINATION DETAIL MODAL POPUP */}
+      {/* DESTINATION DETAIL MODAL */}
       <AnimatePresence>
         {selectedDetailModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 select-none">
