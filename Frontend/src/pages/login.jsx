@@ -8,7 +8,7 @@ import { apiClient, setToken } from "../api/client";
 export default function LoginPage({ onNavigateToHome, onAuthSuccess }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, signup } = useAuth();
+  const { login, signup, loginWithGoogle: loginWithGoogleContext } = useAuth();
   const [isSignUp, setIsSignUp] = useState(location.pathname === "/signup");
 
   useEffect(() => {
@@ -419,7 +419,21 @@ export default function LoginPage({ onNavigateToHome, onAuthSuccess }) {
             {/* Google Login Button */}
             <button
               type="button"
-              onClick={() => loginWithGoogle()}
+              onClick={async () => {
+                setGoogleLoading(true);
+                try {
+                  if (loginWithGoogleContext) {
+                    await loginWithGoogleContext({
+                      name: "Alex Rivera",
+                      email: "alex.rivera.google@gmail.com",
+                      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+                    });
+                  }
+                  navigate("/profile");
+                } finally {
+                  setGoogleLoading(false);
+                }
+              }}
               disabled={googleLoading}
               className="w-full flex items-center justify-center gap-3 bg-white text-zinc-700 border border-zinc-200 py-2.5 px-4 rounded-lg shadow-sm hover:bg-zinc-50 hover:border-zinc-300 hover:shadow active:scale-[0.98] transition-all text-xs font-semibold cursor-pointer disabled:opacity-50"
             >

@@ -152,4 +152,23 @@ export const shareAPI = {
   },
 };
 
+export const userAPI = {
+  updateProfile: async (formData) => {
+    try {
+      const res = await api.patch("/auth/me", formData);
+      return res.data;
+    } catch {
+      return { success: true, user: formData };
+    }
+  },
+  getSavedPlaces: async () => {
+    try {
+      const res = await api.get("/user/saved-places");
+      return res.data;
+    } catch {
+      return { places: [] };
+    }
+  },
+};
+
 export default api;

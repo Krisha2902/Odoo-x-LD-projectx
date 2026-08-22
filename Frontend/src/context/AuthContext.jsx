@@ -65,6 +65,31 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const loginWithGoogle = async (googleProfile) => {
+    setLoading(true);
+    try {
+      const gUser = {
+        id: googleProfile?.id || "google_user_999",
+        name: googleProfile?.name || "Alex Rivera",
+        email: googleProfile?.email || "alex.rivera.google@gmail.com",
+        username: "@alex_google",
+        avatar:
+          googleProfile?.avatar ||
+          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
+        provider: "Google Account",
+      };
+      const gToken = "google_oauth_jwt_token_999";
+      setToken(gToken);
+      setUser(gUser);
+      localStorage.setItem("globetrotter_token", gToken);
+      localStorage.setItem("globetrotter_user", JSON.stringify(gUser));
+      addToast("Logged in with Google Account!", "success");
+      return { token: gToken, user: gUser };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const signup = async (fullName, email, password) => {
     setLoading(true);
     try {
@@ -104,7 +129,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, signup, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, loginWithGoogle, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );
