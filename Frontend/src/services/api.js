@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -26,6 +26,14 @@ export const authAPI = {
   },
   signup: async (userData) => {
     const res = await api.post("/auth/signup", userData);
+    return res.data;
+  },
+  sendOtp: async (email) => {
+    const res = await api.post("/auth/send-otp", { email });
+    return res.data;
+  },
+  verifyOtpAndSignUp: async (payload) => {
+    const res = await api.post("/auth/verify-otp-and-signup", payload);
     return res.data;
   },
   getMe: async () => {
@@ -64,12 +72,31 @@ export const tripsAPI = {
     const res = await api.post(`/trips/${id}/fork`);
     return res.data;
   },
+  getBudget: async (id) => {
+    const res = await api.get(`/trips/${id}/budget`);
+    return res.data;
+  },
 };
 
-// Cities Search API Endpoints
+// AI Itinerary API Endpoints
+export const aiAPI = {
+  generateItinerary: async (params) => {
+    const res = await api.post("/ai/generate-itinerary", params);
+    return res.data;
+  },
+};
+
+// Cities & Catalog API Endpoints
+export const catalogAPI = {
+  getDestinations: async () => {
+    const res = await api.get("/catalog/destinations");
+    return res.data;
+  },
+};
+
 export const citiesAPI = {
   search: async (query) => {
-    const res = await api.get(`/cities`, { params: { search: query } });
+    const res = await api.get("/catalog/destinations", { params: { search: query } });
     return res.data;
   },
 };
@@ -120,7 +147,7 @@ export const exploreAPI = {
 
 export const shareAPI = {
   getBySlug: async (slug) => {
-    const res = await api.get(`/share/${slug}`);
+    const res = await api.get(`/public/share/${slug}`);
     return res.data;
   },
 };

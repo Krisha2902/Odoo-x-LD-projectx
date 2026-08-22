@@ -32,7 +32,7 @@ function HomeWrapper() {
 
 function LoginWrapper() {
   const navigate = useNavigate();
-  return <LoginPage onNavigateToHome={() => navigate("/")} />;
+  return <LoginPage onNavigateToHome={() => navigate("/home")} />;
 }
 
 export default function App() {
@@ -41,13 +41,14 @@ export default function App() {
       <AuthProvider>
         <div className="min-h-screen bg-[#071517] text-white font-sans">
           <Routes>
-            {/* Login & Signup (No Navbar or Footer) */}
+            {/* Initial Site Entry: Login & Signup Pages */}
+            <Route path="/" element={<LoginWrapper />} />
             <Route path="/login" element={<LoginWrapper />} />
             <Route path="/signup" element={<LoginWrapper />} />
 
             {/* Home Page */}
             <Route
-              path="/"
+              path="/home"
               element={
                 <>
                   <Navbar />
@@ -213,15 +214,7 @@ export default function App() {
               }
             />
 
-            <Route
-              path="*"
-              element={
-                <>
-                  <Navbar />
-                  <HomeWrapper />
-                </>
-              }
-            />
+            <Route path="*" element={<LoginWrapper />} />
           </Routes>
         </div>
       </AuthProvider>
