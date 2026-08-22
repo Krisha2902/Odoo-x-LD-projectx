@@ -3,6 +3,7 @@ import {
   ArrowRight, CalendarDays, Check, ChevronRight, Clock3, MapPin,
   MoreHorizontal, Navigation, Plus, Sparkles, Utensils, WalletCards, X,
 } from "lucide-react";
+import PlaneCursor from "../../components/PlaneCursor";
 
 const ROUTE = [
   { city: "Kyoto", detail: "Jun 10 - 12", complete: true },
@@ -54,6 +55,7 @@ function OngoingTrips() {
         </section>
         <div className="mt-8 flex flex-wrap items-center justify-between gap-4 text-sm text-white/45"><span className="flex items-center gap-2"><Clock3 className="h-4 w-4" /> Last synced a moment ago</span><button className="flex items-center gap-2 font-semibold text-[#8af5d7] hover:text-white">Open full itinerary <ArrowRight className="h-4 w-4" /></button></div>
       </div>
+      <PlaneCursor />
     </main>
   );
 }

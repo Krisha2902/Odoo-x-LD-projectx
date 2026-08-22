@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight, Clock3, MapPin, Plus, Sparkles } from "lucide-react";
+import PlaneCursor from "../../components/PlaneCursor";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -31,6 +32,7 @@ function Calendar() {
         </section>
         <section className="mt-8 grid gap-4 sm:grid-cols-3"><div className="rounded-2xl border border-[#2c5b57] bg-[#0c2829] p-5"><MapPin className="h-5 w-5 text-[#8af5d7]" /><p className="mt-5 text-2xl font-semibold">11 days</p><p className="mt-1 text-sm text-white/50">Japan journey</p></div><div className="rounded-2xl border border-[#2c5b57] bg-[#0c2829] p-5"><Clock3 className="h-5 w-5 text-[#ffcf70]" /><p className="mt-5 text-2xl font-semibold">5 plans</p><p className="mt-1 text-sm text-white/50">On your calendar</p></div><div className="rounded-2xl border border-[#2c5b57] bg-[#0c2829] p-5"><Sparkles className="h-5 w-5 text-[#8af5d7]" /><p className="mt-5 text-2xl font-semibold">1 trip</p><p className="mt-1 text-sm text-white/50">Making memories</p></div></section>
       </div>
+      <PlaneCursor />
     </main>
   );
 }
