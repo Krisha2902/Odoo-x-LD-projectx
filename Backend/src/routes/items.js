@@ -3,6 +3,7 @@ const express = require('express');
 const { z } = require('zod');
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
+const { emitTripEvent } = require('../sockets');
 
 const router = express.Router({ mergeParams: true });
 
@@ -23,6 +24,12 @@ router.post('/', authMiddleware, async (req, res) => {
     const { stopId } = req.params;
     const data = itemSchema.parse(req.body);
 
+    const stopRes = await pool.query('SELECT trip_id FROM stops WHERE id = $1', [stopId]);
+    if (stopRes.rows.length === 0) {
+      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Stop not found' } });
+    }
+    const tripId = stopRes.rows[0].trip_id;
+
     const result = await pool.query(
       `INSERT INTO itinerary_items 
        (stop_id, activity_catalog_id, custom_name, category, cost, scheduled_date, scheduled_time, duration_minutes, notes, updated_at)
@@ -41,6 +48,10 @@ router.post('/', authMiddleware, async (req, res) => {
       ]
     );
 
+    const newItem = result.rows[0];
+    emitTripEvent(tripId, 'item:created', { item: newItem, stopId });
+
+    res.status(201).json({ item: newItem });
     res.status(201).json({ item: result.rows[0] });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -80,6 +91,13 @@ router.patch('/:id', authMiddleware, async (req, res) => {
       return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Item not found' } });
     }
 
+    const updatedItem = result.rows[0];
+    const stopRes = await pool.query('SELECT trip_id FROM stops WHERE id = $1', [updatedItem.stop_id]);
+    if (stopRes.rows.length > 0) {
+      emitTripEvent(stopRes.rows[0].trip_id, 'item:updated', { item: updatedItem });
+    }
+
+    res.json({ item: updatedItem });
     res.json({ item: result.rows[0] });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -93,6 +111,24 @@ router.patch('/:id', authMiddleware, async (req, res) => {
 router.delete('/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
+
+    const itemQuery = await pool.query(
+      `SELECT i.id, s.trip_id, i.stop_id 
+       FROM itinerary_items i 
+       JOIN stops s ON i.stop_id = s.id 
+       WHERE i.id = $1`,
+      [id]
+    );
+
+    if (itemQuery.rows.length === 0) {
+      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Item not found' } });
+    }
+
+    const { trip_id, stop_id } = itemQuery.rows[0];
+    await pool.query(`DELETE FROM itinerary_items WHERE id = $1`, [id]);
+
+    emitTripEvent(trip_id, 'item:deleted', { itemId: parseInt(id, 10), stopId: stop_id });
+
     const result = await pool.query(`DELETE FROM itinerary_items WHERE id = $1 RETURNING id`, [id]);
     if (result.rows.length === 0) {
       return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Item not found' } });

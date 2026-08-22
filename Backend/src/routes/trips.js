@@ -163,4 +163,25 @@ router.delete('/:id', authMiddleware, async (req, res) => {
   }
 });
 
+router.get('/:id/simplified', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      `SELECT i.scheduled_date AS date, i.scheduled_time AS time, 
+              COALESCE(i.custom_name, ac.name) AS name, c.name AS location, i.category
+       FROM itinerary_items i
+       JOIN stops s ON i.stop_id = s.id
+       JOIN cities c ON s.city_id = c.id
+       LEFT JOIN activity_catalog ac ON i.activity_catalog_id = ac.id
+       WHERE s.trip_id = $1
+       ORDER BY i.scheduled_date ASC, i.scheduled_time ASC`,
+      [id]
+    );
+
+    res.json({ timeline: result.rows });
+  } catch (error) {
+    res.status(500).json({ error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+});
+
 module.exports = router;

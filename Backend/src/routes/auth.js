@@ -3,6 +3,8 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { z } = require('zod');
+const pool = require('../db'); 
+const authMiddleware = require('../middleware/auth'); 
 const pool = require('../db'); // Assuming standard pg pool export
 const authMiddleware = require('../middleware/auth'); // Standard JWT verification middleware
 

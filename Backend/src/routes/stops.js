@@ -6,6 +6,12 @@ const authMiddleware = require('../middleware/auth');
 
 const router = express.Router({ mergeParams: true });
 
+// Updated schema: accepts a city_name string instead of a strict database ID
+const stopSchema = z.object({
+  city_name: z.string().min(1, "City name is required"),
+  country: z.string().optional().default("India"),
+  lat: z.number().optional().default(0.0),
+  lng: z.number().optional().default(0.0),
 const stopSchema = z.object({
   city_id: z.number().int().positive(),
   order_index: z.number().int().nonnegative(),
@@ -17,12 +23,32 @@ const reorderSchema = z.object({
   order_index: z.number().int().nonnegative(),
 });
 
-// POST /trips/:tripId/stops
+// POST /trips/:tripId/stops - Dynamically handles cities on the fly!
 router.post('/', authMiddleware, async (req, res) => {
   try {
     const { tripId } = req.params;
     const parsed = stopSchema.parse(req.body);
 
+    // 1. Check if the city already exists in the database (case-insensitive)
+    let cityRes = await pool.query(
+      `SELECT id FROM cities WHERE LOWER(name) = LOWER($1)`,
+      [parsed.city_name.trim()]
+    );
+
+    let cityId;
+
+    // 2. If it doesn't exist, create it dynamically right now!
+    if (cityRes.rows.length === 0) {
+      const newCityRes = await pool.query(
+        `INSERT INTO cities (name, country, lat, lng) VALUES ($1, $2, $3, $4) RETURNING id`,
+        [parsed.city_name.trim(), parsed.country, parsed.lat, parsed.lng]
+      );
+      cityId = newCityRes.rows[0].id;
+    } else {
+      cityId = cityRes.rows[0].id;
+    }
+
+    // 3. Now insert the stop using the resolved (or newly created) city ID
     const stopRes = await pool.query(
       `INSERT INTO stops (trip_id, city_id, order_index, start_date, end_date)
        VALUES ($1, $2, $3, $4, $5)
