@@ -1,202 +1,230 @@
-import React, { useEffect, useState } from 'react';
-import LoginPage from './pages/login.jsx';
-import DashboardPage from './pages/dashboard.jsx';
-import { apiClient, getToken, removeToken } from './api/client';
+import React from "react";
+import { Routes, Route, useNavigate } from "react-router-dom";
+import { ToastProvider } from "./context/ToastContext";
+import { AuthProvider } from "./context/AuthContext";
 
-function App() {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const token = getToken();
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const res = await apiClient.get('/auth/me');
-        setUser(res.user);
-      } catch (err) {
-        console.warn('Session expired or token invalid:', err.message);
-        removeToken();
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, []);
-
-  const handleAuthSuccess = (userData) => {
-    setUser(userData);
-  };
-
-  const handleLogout = () => {
-    removeToken();
-    setUser(null);
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-slate-950 text-white">
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-[#0096B4] to-cyan-400 flex items-center justify-center font-black text-2xl animate-bounce shadow-lg shadow-cyan-500/30 mb-4">
-          G
-        </div>
-        <p className="text-xs font-bold tracking-widest text-cyan-400 uppercase animate-pulse">
-          Connecting to GlobeTrotter...
-        </p>
-      </div>
-    );
-  }
-
-  return user ? (
-    <DashboardPage user={user} onLogout={handleLogout} />
-  ) : (
-    <LoginPage onAuthSuccess={handleAuthSuccess} />
-  );
-}
-
-export default App;
-import { Routes, Route } from "react-router-dom";
-
-import LoginPage from "./pages/login.jsx";
-
+// Global Layout Components
 import Navbar from "./components/Navbar/Navbar";
 import Footer from "./components/Footer/Footer";
 
-import Home from "./pages/Home/Home";
-import Explore from "./pages/Explore/Explore";
-import MyTrips from "./pages/MyTrips/MyTrips";
-import OngoingTrips from "./pages/OngoingTrips/OngoingTrips";
-import Calendar from "./pages/Calendar/Calendar";
-import Profile from "./pages/Profile/Profile";
-import PlanTrip from "./pages/PlanTrip/PlanTrip";
+// Pages
+import HomePage from "./pages/Home.jsx";
+import LoginPage from "./pages/login.jsx";
+import DashboardPage from "./pages/Dashboard.jsx";
+import MyTripsPage from "./pages/MyTrips.jsx";
+import TripDetailsPage from "./pages/TripDetails.jsx";
+import OngoingTripPage from "./pages/OngoingTrip.jsx";
+import OngoingTripsPage from "./pages/OngoingTrips/OngoingTrips.jsx";
+import PlanTripPage from "./pages/PlanTrip.jsx";
+import TripBuilderPage from "./pages/TripBuilder.jsx";
+import TimelineViewPage from "./pages/TimelineView.jsx";
+import MapViewPage from "./pages/MapView.jsx";
+import ConductorViewPage from "./pages/ConductorView.jsx";
+import PublicSharePage from "./pages/PublicShare.jsx";
+import ExplorePage from "./pages/Explore.jsx";
+import CalendarPage from "./pages/Calendar/Calendar.jsx";
+import ProfilePage from "./pages/Profile/Profile.jsx";
 
-function App() {
-  return (
-    <div className="min-h-screen bg-[#071517]">
-      <Routes>
-
-        {/* =================================================
-            LOGIN
-            No navbar on login page
-        ================================================= */}
-
-        <Route
-          path="/login"
-          element={<LoginPage />}
-        />
-
-        {/* =================================================
-            HOME
-        ================================================= */}
-
-        <Route
-          path="/"
-          element={
-            <>
-              <Navbar />
-              <Home />      
-            </>
-          }
-        />
-
-        {/* =================================================
-            EXPLORE
-        ================================================= */}
-
-        <Route
-          path="/explore"
-          element={
-            <>
-              <Navbar />
-              <Explore />
-              <Footer />  
-            </>
-          }
-        />
-
-        {/* =================================================
-            MY TRIPS
-        ================================================= */}
-
-        <Route
-          path="/my-trips"
-          element={
-            <>
-              <Navbar />
-              <MyTrips />
-              <Footer />
-            </>
-          }
-        />
-
-        {/* =================================================
-            ONGOING TRIPS
-        ================================================= */}
-
-        <Route
-          path="/ongoing-trips"
-          element={
-            <>
-              <Navbar />
-              <OngoingTrips />
-              <Footer />
-            </>   
-          }
-        />
-
-        {/* =================================================
-            CALENDAR
-        ================================================= */}
-
-        <Route
-          path="/calendar"
-          element={
-            <>
-              <Navbar />
-              <Calendar />
-              <Footer />
-            </>
-          }
-        />
-
-        {/* =================================================
-            PROFILE
-        ================================================= */}
-
-        <Route
-          path="/profile"
-          element={
-            <>
-              <Navbar />
-              <Profile />
-              <Footer />
-            </>
-          }
-        />
-
-        {/* =================================================
-            PLAN TRIP
-        ================================================= */}
-
-        <Route
-          path="/plan-trip"
-          element={
-            <>
-              <Navbar />
-              <PlanTrip />
-              <Footer />
-            </>
-          }
-        />
-
-      </Routes>
-    </div>
-  );
+function HomeWrapper() {
+  const navigate = useNavigate();
+  return <HomePage onNavigateToAuth={() => navigate("/login")} />;
 }
 
-export default App;
+function LoginWrapper() {
+  const navigate = useNavigate();
+  return <LoginPage onNavigateToHome={() => navigate("/")} />;
+}
+
+export default function App() {
+  return (
+    <ToastProvider>
+      <AuthProvider>
+        <div className="min-h-screen bg-[#071517] text-white font-sans">
+          <Routes>
+            {/* Login & Signup (No Navbar or Footer) */}
+            <Route path="/login" element={<LoginWrapper />} />
+            <Route path="/signup" element={<LoginWrapper />} />
+
+            {/* Home Page */}
+            <Route
+              path="/"
+              element={
+                <>
+                  <Navbar />
+                  <HomeWrapper />
+                </>
+              }
+            />
+
+            {/* Explore Page */}
+            <Route
+              path="/explore"
+              element={
+                <>
+                  <Navbar />
+                  <ExplorePage />
+                  <Footer />
+                </>
+              }
+            />
+
+            {/* My Trips */}
+            <Route
+              path="/my-trips"
+              element={
+                <>
+                  <Navbar />
+                  <MyTripsPage />
+                  <Footer />
+                </>
+              }
+            />
+            <Route
+              path="/trips"
+              element={
+                <>
+                  <Navbar />
+                  <DashboardPage />
+                  <Footer />
+                </>
+              }
+            />
+
+            {/* Ongoing Trips */}
+            <Route
+              path="/ongoing-trips"
+              element={
+                <>
+                  <Navbar />
+                  <OngoingTripsPage />
+                  <Footer />
+                </>
+              }
+            />
+            <Route
+              path="/trips/:id/ongoing"
+              element={
+                <>
+                  <Navbar />
+                  <OngoingTripPage />
+                  <Footer />
+                </>
+              }
+            />
+
+            {/* Trip Details */}
+            <Route
+              path="/trips/:id"
+              element={
+                <>
+                  <Navbar />
+                  <TripDetailsPage />
+                  <Footer />
+                </>
+              }
+            />
+            <Route
+              path="/trips/:id/details"
+              element={
+                <>
+                  <Navbar />
+                  <TripDetailsPage />
+                  <Footer />
+                </>
+              }
+            />
+
+            {/* Plan Trip */}
+            <Route
+              path="/plan-trip"
+              element={
+                <>
+                  <Navbar />
+                  <PlanTripPage />
+                  <Footer />
+                </>
+              }
+            />
+
+            {/* Calendar */}
+            <Route
+              path="/calendar"
+              element={
+                <>
+                  <Navbar />
+                  <CalendarPage />
+                  <Footer />
+                </>
+              }
+            />
+
+            {/* Profile */}
+            <Route
+              path="/profile"
+              element={
+                <>
+                  <Navbar />
+                  <ProfilePage />
+                  <Footer />
+                </>
+              }
+            />
+
+            {/* Trip Builder, Timeline, Map, Conductor & Share */}
+            <Route
+              path="/trips/:id/build"
+              element={
+                <>
+                  <Navbar />
+                  <TripBuilderPage />
+                </>
+              }
+            />
+            <Route
+              path="/trips/:id/timeline"
+              element={
+                <>
+                  <Navbar />
+                  <TimelineViewPage />
+                  <Footer />
+                </>
+              }
+            />
+            <Route
+              path="/trips/:id/map"
+              element={
+                <>
+                  <Navbar />
+                  <MapViewPage />
+                  <Footer />
+                </>
+              }
+            />
+            <Route path="/trips/:id/conduct" element={<ConductorViewPage />} />
+            <Route path="/trips/:id/view" element={<ConductorViewPage />} />
+            <Route
+              path="/share/:slug"
+              element={
+                <>
+                  <Navbar />
+                  <PublicSharePage />
+                  <Footer />
+                </>
+              }
+            />
+
+            <Route
+              path="*"
+              element={
+                <>
+                  <Navbar />
+                  <HomeWrapper />
+                </>
+              }
+            />
+          </Routes>
+        </div>
+      </AuthProvider>
+    </ToastProvider>
+  );
+}

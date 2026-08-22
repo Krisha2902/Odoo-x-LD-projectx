@@ -38,11 +38,14 @@ html {
   scroll-behavior: smooth;
 }
 
+*, body, a, button, input, label, select, textarea, div, span, img, svg {
+  cursor: none !important;
+}
+
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-
   background: #071517;
 }
 
@@ -51,10 +54,6 @@ input,
 textarea,
 select {
   font: inherit;
-}
-
-button {
-  cursor: pointer;
 }
 
 a {
@@ -76,36 +75,41 @@ a {
 ========================================================= */
 
 ::selection {
-  background: rgba(0, 180, 216, 0.25);
-  color: #07323a;
+  background: #42d6b5;
+  color: #061d1d;
 }
 
-/* =========================================================
-   SCROLLBAR
-========================================================= */
-
-::-webkit-scrollbar {
-  width: 8px;
+/* Custom Animations */
+@keyframes floatOrb {
+  0%, 100% { transform: translateY(0px) scale(1); }
+  50% { transform: translateY(-15px) scale(1.05); }
 }
 
-::-webkit-scrollbar-track {
-  background: #071517;
+.animate-float-orb {
+  animation: floatOrb 6s ease-in-out infinite;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #0096b4;
-  border-radius: 999px;
+@keyframes marqueeRightToLeft {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #00b4d8;
+.animate-marquee-slow {
+  animation: marqueeRightToLeft 35s linear infinite;
+  display: flex;
+  width: max-content;
 }
 
-/* =========================================================
-   FOCUS
-========================================================= */
+.animate-marquee-slow:hover {
+  animation-play-state: paused;
+}
 
-:focus-visible {
-  outline: 2px solid #00b4d8;
-  outline-offset: 3px;
+.animate-marquee-medium {
+  animation: marqueeRightToLeft 25s linear infinite;
+  display: flex;
+  width: max-content;
+}
+
+.animate-marquee-medium:hover {
+  animation-play-state: paused;
 }

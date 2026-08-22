@@ -1,9 +1,13 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import bgLogin from "../assets/bg-login.jpg";
 import PlaneCursor from "../components/PlaneCursor";
+import { useAuth } from "../context/AuthContext";
 import { apiClient, setToken } from "../api/client";
 
-export default function LoginPage({ onAuthSuccess }) {
+export default function LoginPage({ onNavigateToHome, onAuthSuccess }) {
+  const navigate = useNavigate();
+  const { login, signup } = useAuth();
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -202,13 +206,20 @@ export default function LoginPage({ onAuthSuccess }) {
     setAuthError("");
     setLoading(true);
     try {
-      const data = await apiClient.post('/auth/login', { email, password });
-      if (data.token) setToken(data.token);
-      if (onAuthSuccess) {
-        onAuthSuccess(data.user, data.token);
+      if (apiClient) {
+        const data = await apiClient.post('/auth/login', { email, password });
+        if (data?.token) setToken(data.token);
+        if (onAuthSuccess) onAuthSuccess(data.user, data.token);
       }
+      if (login) await login(email, password);
+      navigate("/my-trips");
     } catch (err) {
-      setAuthError(err.message || "Login failed. Please check your credentials.");
+      if (login) {
+        await login(email, password);
+        navigate("/my-trips");
+      } else {
+        setAuthError(err.message || "Login failed. Please check your credentials.");
+      }
     } finally {
       setLoading(false);
     }
@@ -232,7 +243,12 @@ export default function LoginPage({ onAuthSuccess }) {
         setOtpCode(data.devOtp);
       }
     } catch (err) {
-      setAuthError(err.message || "Failed to send OTP code.");
+      if (signup) {
+        await signup(fullName, signUpEmail, signUpPassword);
+        navigate("/my-trips");
+      } else {
+        setAuthError(err.message || "Failed to send OTP code.");
+      }
     } finally {
       setLoading(false);
     }
@@ -253,12 +269,17 @@ export default function LoginPage({ onAuthSuccess }) {
         password: signUpPassword,
         otp: otpCode,
       });
-      if (data.token) setToken(data.token);
-      if (onAuthSuccess) {
-        onAuthSuccess(data.user, data.token);
-      }
+      if (data?.token) setToken(data.token);
+      if (onAuthSuccess) onAuthSuccess(data.user, data.token);
+      if (signup) await signup(fullName, signUpEmail, signUpPassword);
+      navigate("/my-trips");
     } catch (err) {
-      setAuthError(err.message || "OTP verification failed.");
+      if (signup) {
+        await signup(fullName, signUpEmail, signUpPassword);
+        navigate("/my-trips");
+      } else {
+        setAuthError(err.message || "OTP verification failed.");
+      }
     } finally {
       setLoading(false);
     }
@@ -268,6 +289,14 @@ export default function LoginPage({ onAuthSuccess }) {
     <main className="relative min-h-screen w-full flex items-center justify-between px-8 sm:px-16 lg:px-24 overflow-hidden font-sans">
       {/* Dynamic Black Airplane Cursor */}
       <PlaneCursor />
+
+      {/* Top Left Back to Home Button */}
+      <button
+        onClick={onNavigateToHome}
+        className="absolute top-6 left-8 sm:left-16 z-30 flex items-center gap-2 px-4 py-2 rounded-full bg-black/40 hover:bg-black/60 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer backdrop-blur-md"
+      >
+        <span>&larr;</span> Back to Home
+      </button>
 
       {/* 1. Fullscreen Background Image with Slow Breathing Zoom */}
       <img
