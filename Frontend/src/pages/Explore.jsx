@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Navbar from "../components/Navbar";
+import Navbar from "../components/Navbar/Navbar";
 import PlaneCursor from "../components/PlaneCursor";
 
 export default function ExplorePage() {
@@ -67,7 +67,6 @@ export default function ExplorePage() {
 
   const activeDest = destinations[activeIndex];
 
-  // Cycle Next & Prev
   const handleNext = () => {
     setActiveIndex((prev) => (prev + 1) % destinations.length);
   };
@@ -81,7 +80,6 @@ export default function ExplorePage() {
     setBookmarked((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  // Keyboard Navigation Support
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "ArrowRight") handleNext();
@@ -92,11 +90,11 @@ export default function ExplorePage() {
   }, []);
 
   return (
-    <div className="relative min-h-screen w-full bg-slate-950 text-white font-sans overflow-hidden select-none">
+    <div className="relative min-h-screen w-full bg-[#071C1C] text-white font-sans overflow-hidden select-none">
       <PlaneCursor />
       <Navbar />
 
-      {/* 1. FULL-SCREEN CINEMATIC HERO BACKDROP CROSSFADE */}
+      {/* FULL-SCREEN CINEMATIC HERO BACKDROP CROSSFADE */}
       <div className="absolute inset-0 z-0 overflow-hidden">
         <AnimatePresence mode="popLayout">
           <motion.div
@@ -112,20 +110,18 @@ export default function ExplorePage() {
               alt={activeDest.title}
               className="w-full h-full object-cover brightness-65"
             />
-            {/* Ambient Dark Overlay Gradients */}
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-slate-950/70" />
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#071C1C] via-[#071C1C]/40 to-[#071C1C]/70" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#071C1C]/90 via-[#071C1C]/40 to-transparent" />
           </motion.div>
         </AnimatePresence>
       </div>
 
       {/* MAIN CAROUSEL CONTENT CONTAINER */}
-      <main className="relative z-10 max-w-7xl mx-auto px-6 sm:px-12 min-h-[calc(100vh-80px)] flex flex-col justify-between pt-8 pb-12">
+      <main className="relative z-10 max-w-7xl mx-auto px-6 sm:px-12 min-h-[calc(100vh-80px)] flex flex-col justify-between pt-24 pb-12">
         {/* TOP SUB-HEADER BAR */}
         <div className="flex items-center justify-end">
-
           <div className="text-xs font-bold text-zinc-400 bg-black/40 backdrop-blur-md px-3.5 py-1 rounded-full border border-white/10">
-            <span className="text-cyan-400 font-extrabold text-sm">0{activeIndex + 1}</span> / 0
+            <span className="text-[#72F0D0] font-extrabold text-sm">0{activeIndex + 1}</span> / 0
             {destinations.length}
           </div>
         </div>
@@ -142,7 +138,7 @@ export default function ExplorePage() {
               className="space-y-4"
             >
               {/* Location Pill Tag */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/20 border border-cyan-400/40 backdrop-blur-md text-cyan-300 text-xs font-black uppercase tracking-widest shadow">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#42D6B5]/15 border border-[#42D6B5]/40 backdrop-blur-md text-[#72F0D0] text-xs font-black uppercase tracking-widest shadow">
                 <span>{activeDest.tag}</span>
               </div>
 
@@ -160,7 +156,7 @@ export default function ExplorePage() {
               <div className="pt-4 flex flex-wrap items-center gap-4">
                 <button
                   onClick={() => setSelectedDetailModal(activeDest)}
-                  className="px-8 py-3.5 rounded-full bg-white/15 hover:bg-cyan-400 hover:text-slate-950 text-white font-extrabold text-xs uppercase tracking-wider backdrop-blur-xl border border-white/30 shadow-[0_10px_30px_rgba(0,0,0,0.4)] hover:shadow-[0_0_25px_rgba(0,212,255,0.6)] active:scale-95 transition-all cursor-pointer flex items-center gap-2"
+                  className="px-8 py-3.5 rounded-full bg-gradient-to-r from-[#7AF0D2] via-[#4DE0C1] to-[#20C9B0] text-[#063D3A] font-extrabold text-xs uppercase tracking-wider shadow-[0_4px_20px_rgba(0,168,150,0.3)] hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-2"
                 >
                   <span>Explore Destination</span>
                   <span className="text-sm">→</span>
@@ -188,7 +184,7 @@ export default function ExplorePage() {
                 onClick={() => setActiveIndex(idx)}
                 className={`h-2.5 rounded-full transition-all cursor-pointer ${
                   activeIndex === idx
-                    ? "w-9 bg-cyan-400 shadow-[0_0_12px_rgba(0,212,255,0.9)]"
+                    ? "w-9 bg-[#20C9B0] shadow-[0_0_12px_rgba(32,201,176,0.9)]"
                     : "w-2.5 bg-white/30 hover:bg-white/60"
                 }`}
                 title={dest.title}
@@ -200,14 +196,14 @@ export default function ExplorePage() {
           <div className="flex items-center gap-3">
             <button
               onClick={handlePrev}
-              className="w-12 h-12 rounded-full bg-slate-900/80 hover:bg-cyan-500 hover:text-slate-950 border border-white/20 flex items-center justify-center text-white text-base font-black transition-all cursor-pointer shadow-lg active:scale-90 backdrop-blur-md"
+              className="w-12 h-12 rounded-full bg-[#061A1A]/80 hover:bg-[#20C9B0] hover:text-[#063D3A] border border-white/20 flex items-center justify-center text-white text-base font-black transition-all cursor-pointer shadow-lg active:scale-90 backdrop-blur-md"
               title="Previous Destination (Left Arrow)"
             >
               ←
             </button>
             <button
               onClick={handleNext}
-              className="w-12 h-12 rounded-full bg-cyan-400 hover:bg-cyan-300 text-slate-950 border border-cyan-300 flex items-center justify-center text-base font-black transition-all cursor-pointer shadow-[0_0_20px_rgba(0,212,255,0.6)] active:scale-90"
+              className="w-12 h-12 rounded-full bg-gradient-to-r from-[#7AF0D2] to-[#20C9B0] text-[#063D3A] border border-[#7AF0D2]/50 flex items-center justify-center text-base font-black transition-all cursor-pointer shadow-[0_0_20px_rgba(32,201,176,0.5)] active:scale-90"
               title="Next Destination (Right Arrow)"
             >
               →
@@ -224,7 +220,7 @@ export default function ExplorePage() {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-slate-900 border border-cyan-400/40 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl text-left relative"
+              className="bg-[#071C1C] border border-[#42D6B5]/40 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl text-left relative"
             >
               <div className="h-64 relative">
                 <img
@@ -242,7 +238,7 @@ export default function ExplorePage() {
 
               <div className="p-6 space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-cyan-400 uppercase tracking-widest">
+                  <span className="text-xs font-black text-[#72F0D0] uppercase tracking-widest">
                     {selectedDetailModal.tag}
                   </span>
                   <span className="text-xs font-bold text-white bg-white/10 px-3 py-1 rounded-full">
@@ -261,7 +257,7 @@ export default function ExplorePage() {
                 <div className="pt-2 flex justify-end">
                   <button
                     onClick={() => setSelectedDetailModal(null)}
-                    className="px-6 py-2.5 rounded-full bg-cyan-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow hover:bg-cyan-300"
+                    className="px-6 py-2.5 rounded-full bg-gradient-to-r from-[#7AF0D2] to-[#20C9B0] text-[#063D3A] font-black text-xs uppercase tracking-wider shadow hover:scale-105 transition-all"
                   >
                     Close Showcase
                   </button>

@@ -13,7 +13,8 @@ module.exports = (req, res, next) => {
   const token = authHeader.split(' ')[1];
   
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    const secret = process.env.JWT_SECRET || 'globetrotter_super_secret_jwt_key_2026';
+    const payload = jwt.verify(token, secret);
     req.user = payload; // Attaches { userId: ... } to the request
     next();
   } catch (err) {

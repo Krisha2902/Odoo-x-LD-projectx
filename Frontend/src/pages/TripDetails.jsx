@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import Navbar from "../components/Navbar";
+import Navbar from "../components/Navbar/Navbar";
 import TripMap from "../components/TripMap";
 import PlaneCursor from "../components/PlaneCursor";
 
@@ -8,7 +8,6 @@ export default function TripDetailsPage() {
   const { id } = useParams();
   const [activeDay, setActiveDay] = useState("Day 1");
 
-  // Mock Trip Details
   const trip = {
     id: id || "trip_1",
     title: "Ultimate Bali & Island Hopping",
@@ -53,10 +52,10 @@ export default function TripDetailsPage() {
       },
     ],
     budgetBreakdown: [
-      { category: "Lodging / Hotels", cost: 750, color: "from-cyan-500 to-blue-500" },
-      { category: "Food & Dining", cost: 480, color: "from-amber-500 to-orange-500" },
-      { category: "Activities & Tours", cost: 320, color: "from-emerald-500 to-teal-500" },
-      { category: "Transport & Ferries", cost: 130, color: "from-purple-500 to-indigo-500" },
+      { category: "Lodging / Hotels", cost: 750 },
+      { category: "Food & Dining", cost: 480 },
+      { category: "Activities & Tours", cost: 320 },
+      { category: "Transport & Ferries", cost: 130 },
     ],
     gallery: [
       "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=600&q=80",
@@ -66,11 +65,11 @@ export default function TripDetailsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans overflow-x-hidden pb-16 select-none">
+    <div className="min-h-screen bg-[#071C1C] text-white font-sans overflow-x-hidden pb-16 select-none">
       <PlaneCursor />
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-6 sm:px-12 pt-8">
+      <main className="max-w-7xl mx-auto px-6 sm:px-12 pt-24">
         {/* HERO COVER SECTION */}
         <div className="relative rounded-3xl overflow-hidden mb-8 border border-white/15 shadow-2xl h-80 flex flex-col justify-end p-8 text-left">
           <img
@@ -78,11 +77,11 @@ export default function TripDetailsPage() {
             alt={trip.title}
             className="absolute inset-0 w-full h-full object-cover -z-10 brightness-65"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent -z-10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#071C1C] via-[#071C1C]/40 to-transparent -z-10" />
 
           <div className="flex flex-wrap items-end justify-between gap-4 z-10">
             <div>
-              <Link to="/my-trips" className="text-xs font-bold text-cyan-300 mb-2 inline-block">
+              <Link to="/my-trips" className="text-xs font-bold text-[#72F0D0] mb-2 inline-block">
                 &larr; Back to My Trips
               </Link>
               <h1 className="text-3xl sm:text-5xl font-black uppercase text-white tracking-tight">
@@ -96,13 +95,13 @@ export default function TripDetailsPage() {
             <div className="flex items-center gap-3">
               <Link
                 to={`/trips/${trip.id}/build`}
-                className="px-5 py-2.5 rounded-full bg-cyan-400 text-slate-950 font-extrabold text-xs uppercase tracking-wider shadow"
+                className="px-5 py-2.5 rounded-full bg-[#20C9B0] text-[#063D3A] font-extrabold text-xs uppercase tracking-wider shadow hover:bg-[#72F0D0]"
               >
                 ✏️ Edit Itinerary
               </Link>
               <Link
                 to={`/trips/${trip.id}/ongoing`}
-                className="px-5 py-2.5 rounded-full bg-emerald-400 text-slate-950 font-extrabold text-xs uppercase tracking-wider shadow"
+                className="px-5 py-2.5 rounded-full bg-gradient-to-r from-[#7AF0D2] to-[#20C9B0] text-[#063D3A] font-extrabold text-xs uppercase tracking-wider shadow hover:scale-105 transition-all"
               >
                 ⚡ Live Dashboard
               </Link>
@@ -110,27 +109,26 @@ export default function TripDetailsPage() {
           </div>
         </div>
 
-        {/* ROUTE JOURNEY MAP SECTION (Game-like timeline progression) */}
-        <section className="mb-12 text-left bg-slate-900/90 border border-white/10 rounded-2xl p-6 shadow-2xl">
+        {/* ROUTE JOURNEY MAP SECTION */}
+        <section className="mb-12 text-left bg-[#0D2626] border border-[#5AD9BC]/20 rounded-2xl p-6 shadow-2xl">
           <h2 className="text-xl font-black uppercase text-white tracking-tight mb-4 flex items-center gap-2">
             <span>🗺️</span> Journey Route &amp; Progression Map
           </h2>
 
-          {/* Connected Level-like Nodes */}
           <div className="flex items-center justify-between overflow-x-auto custom-scrollbar pb-4 mb-6">
             {trip.route.map((r, idx) => (
               <React.Fragment key={r.city}>
-                <div className="flex items-center gap-3 bg-slate-800 border border-cyan-400/40 px-4 py-3 rounded-2xl shadow min-w-[160px]">
-                  <span className="w-8 h-8 rounded-full bg-cyan-400 text-slate-950 font-black text-xs flex items-center justify-center">
+                <div className="flex items-center gap-3 bg-[#123131] border border-[#42D6B5]/40 px-4 py-3 rounded-2xl shadow min-w-[160px]">
+                  <span className="w-8 h-8 rounded-full bg-[#20C9B0] text-[#063D3A] font-black text-xs flex items-center justify-center">
                     {idx + 1}
                   </span>
                   <div>
                     <strong className="block text-sm font-extrabold text-white">{r.city}</strong>
-                    <span className="text-[10px] text-cyan-300 font-bold">{r.nights} Nights</span>
+                    <span className="text-[10px] text-[#72F0D0] font-bold">{r.nights} Nights</span>
                   </div>
                 </div>
                 {idx < trip.route.length - 1 && (
-                  <span className="text-cyan-400 font-black text-lg px-2">➔</span>
+                  <span className="text-[#20C9B0] font-black text-lg px-2">➔</span>
                 )}
               </React.Fragment>
             ))}
@@ -142,12 +140,11 @@ export default function TripDetailsPage() {
         {/* DAY-BY-DAY JOURNEY & BUDGET SECTION */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-12">
           {/* DAY-BY-DAY JOURNEY (8 COLS) */}
-          <div className="lg:col-span-8 bg-slate-900/90 border border-white/10 rounded-2xl p-6 shadow-2xl text-left">
+          <div className="lg:col-span-8 bg-[#0D2626] border border-[#5AD9BC]/20 rounded-2xl p-6 shadow-2xl text-left">
             <h2 className="text-xl font-black uppercase text-white tracking-tight mb-4 flex items-center gap-2">
               <span>📅</span> Day-by-Day Trip Schedule
             </h2>
 
-            {/* Days Selector */}
             <div className="flex gap-2 border-b border-white/10 pb-4 mb-6">
               {trip.days.map((d) => (
                 <button
@@ -155,8 +152,8 @@ export default function TripDetailsPage() {
                   onClick={() => setActiveDay(d.dayLabel)}
                   className={`px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     activeDay === d.dayLabel
-                      ? "bg-cyan-400 text-slate-950 font-extrabold"
-                      : "bg-slate-800 text-zinc-400 hover:text-white"
+                      ? "bg-[#20C9B0] text-[#063D3A] font-extrabold"
+                      : "bg-[#123131] text-zinc-400 hover:text-white"
                   }`}
                 >
                   {d.dayLabel} ({d.date})
@@ -164,40 +161,39 @@ export default function TripDetailsPage() {
               ))}
             </div>
 
-            {/* Active Day Activities List */}
             <div className="space-y-3">
               {trip.days
                 .find((d) => d.dayLabel === activeDay)
                 ?.activities.map((act, i) => (
-                  <div key={i} className="bg-slate-800/80 border border-white/10 rounded-xl p-4 flex items-center justify-between">
+                  <div key={i} className="bg-[#123131]/80 border border-white/10 rounded-xl p-4 flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] font-black uppercase text-cyan-300 block mb-1">
+                      <span className="text-[10px] font-black uppercase text-[#72F0D0] block mb-1">
                         ⏰ {act.time} &bull; {act.category}
                       </span>
                       <strong className="text-sm font-bold text-white">{act.title}</strong>
                     </div>
-                    <span className="text-xs font-extrabold text-cyan-400">${act.cost}</span>
+                    <span className="text-xs font-extrabold text-[#72F0D0]">${act.cost}</span>
                   </div>
                 ))}
             </div>
           </div>
 
           {/* BUDGET OVERVIEW SECTION (4 COLS) */}
-          <div className="lg:col-span-4 bg-slate-900/90 border border-white/10 rounded-2xl p-6 shadow-2xl text-left">
+          <div className="lg:col-span-4 bg-[#0D2626] border border-[#5AD9BC]/20 rounded-2xl p-6 shadow-2xl text-left">
             <h2 className="text-xl font-black uppercase text-white tracking-tight mb-4 flex items-center gap-2">
               <span>💳</span> Budget Overview
             </h2>
 
-            <div className="bg-slate-800 p-4 rounded-xl border border-white/10 mb-6">
+            <div className="bg-[#123131] p-4 rounded-xl border border-white/10 mb-6">
               <div className="flex justify-between items-baseline mb-2">
                 <span className="text-xs text-zinc-400 font-bold">Total Spend</span>
-                <strong className="text-lg font-black text-cyan-400">
+                <strong className="text-lg font-black text-[#72F0D0]">
                   ${trip.totalSpent} / ${trip.budgetCap}
                 </strong>
               </div>
-              <div className="w-full bg-slate-950 h-2.5 rounded-full overflow-hidden border border-white/10">
+              <div className="w-full bg-[#071C1C] h-2.5 rounded-full overflow-hidden border border-white/10">
                 <div
-                  className="h-full bg-gradient-to-r from-cyan-400 to-teal-300"
+                  className="h-full bg-gradient-to-r from-[#7AF0D2] to-[#20C9B0]"
                   style={{ width: `${(trip.totalSpent / trip.budgetCap) * 100}%` }}
                 />
               </div>
@@ -205,9 +201,9 @@ export default function TripDetailsPage() {
 
             <div className="space-y-2">
               {trip.budgetBreakdown.map((b) => (
-                <div key={b.category} className="bg-slate-800/60 p-3 rounded-xl flex items-center justify-between text-xs">
+                <div key={b.category} className="bg-[#123131]/60 p-3 rounded-xl flex items-center justify-between text-xs">
                   <span className="font-bold text-zinc-300">{b.category}</span>
-                  <span className="font-black text-cyan-300">${b.cost}</span>
+                  <span className="font-black text-[#72F0D0]">${b.cost}</span>
                 </div>
               ))}
             </div>
@@ -215,7 +211,7 @@ export default function TripDetailsPage() {
         </div>
 
         {/* TRIP MEMORIES PHOTO GALLERY */}
-        <section className="text-left bg-slate-900/90 border border-white/10 rounded-2xl p-6 shadow-2xl">
+        <section className="text-left bg-[#0D2626] border border-[#5AD9BC]/20 rounded-2xl p-6 shadow-2xl">
           <h2 className="text-xl font-black uppercase text-white tracking-tight mb-4 flex items-center gap-2">
             <span>📷</span> Trip Memories Gallery
           </h2>

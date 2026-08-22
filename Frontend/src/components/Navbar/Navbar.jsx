@@ -48,77 +48,42 @@ export default function Navbar() {
   const location = useLocation();
   const isHomePage = location.pathname === "/";
 
-  /* =====================================================
-     SCROLL DETECTION
-  ===================================================== */
-
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
 
     handleScroll();
-
-    window.addEventListener("scroll", handleScroll, {
-      passive: true,
-    });
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  /* =====================================================
-     CLOSE MOBILE MENU WHEN ROUTE CHANGES
-  ===================================================== */
 
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname]);
 
-  /* =====================================================
-     PREVENT BACKGROUND SCROLL WHEN MOBILE MENU IS OPEN
-  ===================================================== */
-
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
-
     return () => {
       document.body.style.overflow = "";
     };
   }, [mobileOpen]);
-
-  /* =====================================================
-     NAVBAR BACKGROUND
-
-     HOME PAGE:
-     Transparent at top so hero image stays visible.
-
-     AFTER SCROLL:
-     Glass background appears.
-
-     OTHER PAGES:
-     Theme-aware glass background.
-  ===================================================== */
 
   const headerBackground =
     isHomePage && !scrolled
       ? "border-transparent bg-transparent shadow-none"
       : `
         border-b
-        border-[#A7EBD9]/60
-        bg-[#F4FFFC]/88
-        shadow-[0_8px_35px_rgba(0,137,123,0.10)]
-        dark:border-[#4ACFB2]/20
-        dark:bg-[#071C1C]/90
-        dark:shadow-[0_8px_35px_rgba(0,0,0,0.30)]
+        border-[#5AD9BC]/20
+        bg-[#071C1C]/92
+        shadow-[0_8px_35px_rgba(0,0,0,0.50)]
       `;
 
   return (
     <header
       className={cn(
         "fixed top-0 left-0 right-0 z-50 w-full transition-all duration-500",
-        "backdrop-blur-xl",
+        "backdrop-blur-2xl",
         headerBackground
       )}
     >
@@ -136,61 +101,38 @@ export default function Navbar() {
         "
       >
         {/* =================================================
-            LOGO / BRAND
+            BRAND LOGO (EXISTING TWIN G MONOGRAM + JET AIRPLANE)
         ================================================= */}
 
         <Link
           to="/"
-          className="group flex shrink-0 items-center gap-3"
+          className="group flex shrink-0 items-center gap-3.5"
           aria-label="Ghummy Ghummi home"
         >
-          <span
-            className="
-              flex
-              h-12
-              w-12
-              items-center
-              justify-center
-              rounded-2xl
-              bg-gradient-to-br
-              from-[#8AF5D7]
-              via-[#55E4C1]
-              to-[#22C7B0]
-              shadow-[0_0_25px_rgba(48,220,184,0.25)]
-              transition-all
-              duration-300
-              group-hover:scale-105
-              group-hover:shadow-[0_0_35px_rgba(48,220,184,0.38)]
-            "
-          >
-            <Compass
-              className="h-6 w-6 text-[#063D3A]"
-              strokeWidth={2.3}
-            />
-          </span>
+          <div className="relative flex items-center justify-center">
+            <div className="flex items-center justify-center font-black text-2xl tracking-tighter group-hover:scale-105 transition-transform">
+              <span className="text-white">G</span>
+              <span className="text-[#72F0D0] inline-block rotate-180 -ml-0.5">G</span>
+            </div>
+            <svg
+              className="w-4 h-4 text-[#72F0D0] absolute -top-1.5 -right-2.5 rotate-45 drop-shadow-[0_0_8px_rgba(114,240,208,0.8)]"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+            >
+              <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+            </svg>
+          </div>
 
-          <span
-            className="
-              bg-gradient-to-r
-              from-[#008F82]
-              via-[#00A896]
-              to-[#10B7A2]
-              bg-clip-text
-              text-[22px]
-              font-semibold
-              tracking-tight
-              text-transparent
-              dark:from-[#72F0D0]
-              dark:via-[#5BE4C4]
-              dark:to-[#8AF5D7]
-            "
-          >
-            Ghummy Ghummi
-          </span>
+          <div className="flex items-baseline tracking-tight leading-none font-black text-xl">
+            <span className="text-white">G</span>
+            <span className="font-extrabold text-sm text-[#72F0D0] mr-0.5">hummy</span>
+            <span className="inline-block rotate-180 text-white">G</span>
+            <span className="font-extrabold text-sm text-[#72F0D0]">hummi</span>
+          </div>
         </Link>
 
         {/* =================================================
-            DESKTOP NAVIGATION
+            DESKTOP NAVIGATION (DARK THEME ACCENTS)
         ================================================= */}
 
         <ul className="hidden items-center gap-2 lg:flex">
@@ -220,22 +162,16 @@ export default function Navbar() {
                       `,
                       isActive
                         ? `
-                          bg-[#BDF6E6]/75
-                          text-[#007C70]
-                          shadow-[0_4px_16px_rgba(0,168,150,0.10)]
-
-                          dark:bg-[#42D6B5]/15
-                          dark:!text-[#D9FFF6]
-                          dark:shadow-[0_4px_16px_rgba(66,214,181,0.10)]
+                          bg-[#42D6B5]/20
+                          text-[#D9FFF6]
+                          border
+                          border-[#42D6B5]/40
+                          shadow-[0_0_15px_rgba(66,214,181,0.20)]
                         `
                         : `
-                          text-[#365F5C]
-                          hover:bg-[#DDFBF2]/80
-                          hover:text-[#007C70]
-
-                          dark:!text-[#D9FFF6]
-                          dark:hover:bg-[#42D6B5]/12
-                          dark:hover:!text-[#FFFFFF]
+                          text-zinc-300
+                          hover:bg-[#42D6B5]/12
+                          hover:text-white
                         `
                     )
                   }
@@ -245,26 +181,14 @@ export default function Navbar() {
                       <Icon
                         className={cn(
                           "h-[17px] w-[17px] transition-all duration-300",
-
                           isActive
-                            ? `
-                              text-[#009F8F]
-                              dark:!text-[#8AF5D7]
-                            `
-                            : `
-                              text-[#4C807A]
-                              group-hover:text-[#00A896]
-
-                              dark:!text-[#8AD8C8]
-                              dark:group-hover:!text-[#A8FFE9]
-                            `
+                            ? "text-[#72F0D0]"
+                            : "text-[#8AD8C8] group-hover:text-[#A8FFE9]"
                         )}
                         strokeWidth={1.8}
                       />
 
                       <span>{link.label}</span>
-
-                      {/* ACTIVE PAGE INDICATOR */}
 
                       {isActive && (
                         <span
@@ -276,10 +200,8 @@ export default function Navbar() {
                             w-8
                             -translate-x-1/2
                             rounded-full
-                            bg-[#23CDB0]
-                            shadow-[0_0_9px_rgba(35,205,176,0.55)]
-                            dark:bg-[#72F0D0]
-                            dark:shadow-[0_0_10px_rgba(114,240,208,0.70)]
+                            bg-[#72F0D0]
+                            shadow-[0_0_10px_rgba(114,240,208,0.80)]
                           "
                         />
                       )}
@@ -292,11 +214,10 @@ export default function Navbar() {
         </ul>
 
         {/* =================================================
-            RIGHT SIDE
+            RIGHT SIDE CONTROLS
         ================================================= */}
 
         <div className="hidden items-center gap-4 lg:flex">
-
           {/* PROFILE */}
 
           <Link
@@ -304,31 +225,23 @@ export default function Navbar() {
             aria-label="Profile"
             className="
               flex
-              h-12
-              w-12
+              h-11
+              w-11
               items-center
               justify-center
               rounded-full
               border
-              border-[#A7EBD9]/70
-              bg-white/45
-              text-[#376B66]
+              border-[#5AD9BC]/25
+              bg-[#123131]/60
+              text-[#C9F5EB]
               backdrop-blur-md
               transition-all
               duration-300
 
-              hover:border-[#63DEC2]
-              hover:bg-[#DDFBF2]/75
-              hover:text-[#008F82]
-              hover:shadow-[0_0_20px_rgba(0,168,150,0.14)]
-
-              dark:border-[#5AD9BC]/25
-              dark:bg-[#123131]/55
-              dark:!text-[#C9F5EB]
-              dark:hover:border-[#5AD9BC]/50
-              dark:hover:bg-[#42D6B5]/12
-              dark:hover:!text-[#8AF5D7]
-              dark:hover:shadow-[0_0_20px_rgba(66,214,181,0.15)]
+              hover:border-[#5AD9BC]/50
+              hover:bg-[#42D6B5]/20
+              hover:text-[#8AF5D7]
+              hover:shadow-[0_0_20px_rgba(66,214,181,0.2)]
             "
           >
             <UserRound
@@ -337,9 +250,7 @@ export default function Navbar() {
             />
           </Link>
 
-          {/* =================================================
-              PLAN A TRIP CTA
-          ================================================= */}
+          {/* PLAN A TRIP CTA */}
 
           <Link
             to="/plan-trip"
@@ -358,12 +269,12 @@ export default function Navbar() {
               text-[15px]
               font-bold
               text-[#063D3A]
-              shadow-[0_4px_18px_rgba(0,168,150,0.18)]
+              shadow-[0_4px_18px_rgba(0,168,150,0.3)]
               transition-all
               duration-300
 
               hover:-translate-y-[1px]
-              hover:shadow-[0_6px_24px_rgba(0,168,150,0.28)]
+              hover:shadow-[0_6px_24px_rgba(0,168,150,0.4)]
             "
           >
             <span>Plan a Trip</span>
@@ -382,9 +293,7 @@ export default function Navbar() {
           </Link>
         </div>
 
-        {/* =================================================
-            MOBILE MENU BUTTON
-        ================================================= */}
+        {/* MOBILE MENU BUTTON */}
 
         <button
           type="button"
@@ -397,43 +306,26 @@ export default function Navbar() {
             justify-center
             rounded-xl
             border
-            border-[#A7EBD9]/70
-            bg-white/45
-            text-[#376B66]
+            border-[#5AD9BC]/25
+            bg-[#123131]/60
+            text-[#C9F5EB]
             transition-all
             duration-300
 
-            hover:border-[#63DEC2]
-            hover:bg-[#DDFBF2]/75
-            hover:text-[#008F82]
-
-            dark:border-[#5AD9BC]/25
-            dark:bg-[#123131]/55
-            dark:!text-[#C9F5EB]
-            dark:hover:border-[#5AD9BC]/50
-            dark:hover:bg-[#42D6B5]/12
-            dark:hover:!text-[#8AF5D7]
+            hover:border-[#5AD9BC]/50
+            hover:bg-[#42D6B5]/20
+            hover:text-[#8AF5D7]
 
             lg:hidden
           "
-          aria-label={
-            mobileOpen
-              ? "Close navigation menu"
-              : "Open navigation menu"
-          }
+          aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"}
           aria-expanded={mobileOpen}
         >
-          {mobileOpen ? (
-            <X className="h-6 w-6" />
-          ) : (
-            <Menu className="h-6 w-6" />
-          )}
+          {mobileOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </nav>
 
-      {/* ===================================================
-          MOBILE BACKDROP
-      =================================================== */}
+      {/* MOBILE BACKDROP */}
 
       {mobileOpen && (
         <div
@@ -442,18 +334,15 @@ export default function Navbar() {
             inset-0
             top-[72px]
             z-40
-            bg-[#073D3A]/15
+            bg-black/60
             backdrop-blur-sm
-            dark:bg-black/45
             lg:hidden
           "
           onClick={() => setMobileOpen(false)}
         />
       )}
 
-      {/* ===================================================
-          MOBILE MENU
-      =================================================== */}
+      {/* MOBILE MENU */}
 
       <div
         className={cn(
@@ -467,9 +356,9 @@ export default function Navbar() {
             max-w-sm
 
             border-l
-            border-[#A7EBD9]/70
+            border-[#5AD9BC]/20
 
-            bg-[#F4FFFC]/96
+            bg-[#071C1C]/98
 
             shadow-2xl
             backdrop-blur-2xl
@@ -478,54 +367,18 @@ export default function Navbar() {
             duration-400
             ease-out
 
-            dark:border-[#5AD9BC]/20
-            dark:bg-[#071C1C]/96
-
             lg:hidden
           `,
-          mobileOpen
-            ? "translate-x-0"
-            : "translate-x-full"
+          mobileOpen ? "translate-x-0" : "translate-x-full"
         )}
       >
         <div className="flex flex-col p-6">
-
-          {/* MOBILE BRAND */}
-
-          <div
-            className="
-              mb-6
-              border-b
-              border-[#A7EBD9]/60
-              pb-6
-
-              dark:border-[#5AD9BC]/20
-            "
-          >
-            <span
-              className="
-                text-sm
-                text-[#5B817C]
-                dark:!text-[#A8D9CE]
-              "
-            >
-              Explore the world
-            </span>
-
-            <h2
-              className="
-                mt-1
-                text-xl
-                font-semibold
-                text-[#073D3A]
-                dark:!text-[#E6FFF9]
-              "
-            >
+          <div className="mb-6 border-b border-[#5AD9BC]/20 pb-6">
+            <span className="text-sm text-[#A8D9CE]">Explore the world</span>
+            <h2 className="mt-1 text-xl font-semibold text-[#E6FFF9]">
               Ghummy Ghummi
             </h2>
           </div>
-
-          {/* MOBILE LINKS */}
 
           <ul className="flex flex-col gap-2">
             {NAV_LINKS.map((link) => {
@@ -552,40 +405,26 @@ export default function Navbar() {
                         `,
                         isActive
                           ? `
-                            bg-[#BDF6E6]/75
-                            text-[#007C70]
-
-                            dark:bg-[#42D6B5]/15
-                            dark:!text-[#D9FFF6]
+                            bg-[#42D6B5]/20
+                            text-[#D9FFF6]
+                            border
+                            border-[#42D6B5]/30
                           `
                           : `
-                            text-[#365F5C]
-                            hover:bg-[#DDFBF2]/80
-                            hover:text-[#007C70]
-
-                            dark:!text-[#D9FFF6]
-                            dark:hover:bg-[#42D6B5]/12
-                            dark:hover:!text-white
+                            text-zinc-300
+                            hover:bg-[#42D6B5]/12
+                            hover:text-white
                           `
                       )
                     }
                   >
-                    <Icon
-                      className="
-                        h-5
-                        w-5
-                        dark:!text-[#8AF5D7]
-                      "
-                    />
-
+                    <Icon className="h-5 w-5 text-[#8AF5D7]" />
                     {link.label}
                   </NavLink>
                 </li>
               );
             })}
           </ul>
-
-          {/* MOBILE CTA */}
 
           <Link
             to="/plan-trip"
@@ -606,23 +445,13 @@ export default function Navbar() {
               font-bold
               text-[#063D3A]
 
-              shadow-[0_4px_18px_rgba(0,168,150,0.18)]
-
+              shadow-[0_4px_18px_rgba(0,168,150,0.3)]
               transition-all
-              duration-300
-
-              hover:shadow-[0_6px_22px_rgba(0,168,150,0.25)]
             "
           >
             <span>Plan a Trip</span>
-
-            <ArrowUpRight
-              className="h-4 w-4"
-              strokeWidth={2.2}
-            />
+            <ArrowUpRight className="h-4 w-4" strokeWidth={2.2} />
           </Link>
-
-          {/* PROFILE */}
 
           <Link
             to="/profile"
@@ -632,52 +461,21 @@ export default function Navbar() {
               items-center
               gap-3
               rounded-2xl
-
               border
-              border-[#A7EBD9]/70
-
-              bg-white/40
-
+              border-[#5AD9BC]/25
+              bg-[#123131]/60
               px-4
               py-3.5
-
-              text-[#376B66]
-
+              text-[#C9F5EB]
               transition-all
-
-              hover:bg-[#DDFBF2]/75
-              hover:text-[#008F82]
-
-              dark:border-[#5AD9BC]/25
-              dark:bg-[#123131]/55
-              dark:!text-[#C9F5EB]
-              dark:hover:bg-[#42D6B5]/12
-              dark:hover:!text-[#8AF5D7]
+              hover:bg-[#42D6B5]/15
+              hover:text-[#8AF5D7]
             "
           >
             <UserRound className="h-5 w-5" />
-
             <div>
-              <p
-                className="
-                  text-sm
-                  font-medium
-                  text-[#073D3A]
-                  dark:!text-[#E6FFF9]
-                "
-              >
-                Your Profile
-              </p>
-
-              <p
-                className="
-                  text-xs
-                  text-[#5B817C]
-                  dark:!text-[#A8D9CE]
-                "
-              >
-                Manage your account
-              </p>
+              <p className="text-sm font-medium text-[#E6FFF9]">Your Profile</p>
+              <p className="text-xs text-[#A8D9CE]">Manage your account</p>
             </div>
           </Link>
         </div>

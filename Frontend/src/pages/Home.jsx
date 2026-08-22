@@ -339,7 +339,7 @@ export default function HomePage({ onNavigateToAuth }) {
         </div>
 
         {/* GLOBAL PILL SEARCH BAR WITH REAL-TIME WORLDWIDE SEARCH & CALENDAR */}
-        <div ref={searchFormRef} className="relative w-full max-w-3xl mx-auto z-30 mt-4 animate-fade-in-up-delayed">
+        <div ref={searchFormRef} className="relative w-full max-w-3xl mx-auto z-50 mt-4 animate-fade-in-up-delayed">
           <form
             onSubmit={handleSearchSubmit}
             className="bg-white rounded-full p-2.5 sm:p-3 sm:px-8 shadow-[0_25px_70px_rgba(0,0,0,0.7)] border border-white/90 flex flex-wrap sm:flex-nowrap items-center justify-between gap-4 text-left text-zinc-800 select-none relative hover:shadow-[0_25px_80px_rgba(0,212,255,0.2)] transition-shadow"
@@ -371,7 +371,7 @@ export default function HomePage({ onNavigateToAuth }) {
 
               {/* REAL-TIME GLOBAL CITIES DROPDOWN */}
               {showCityDropdown && (
-                <div className="absolute top-full left-0 mt-3 w-80 sm:w-96 bg-slate-900/95 border border-white/20 backdrop-blur-2xl rounded-2xl shadow-2xl p-4 z-50 animate-fade-in-up text-white">
+                <div className="absolute top-full left-0 mt-3 w-80 sm:w-96 bg-slate-900/98 border border-white/20 backdrop-blur-2xl rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.9)] p-4 z-[100] animate-fade-in-up text-white">
                   <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
                     <span className="text-xs font-black text-cyan-300 uppercase tracking-wider flex items-center gap-1.5">
                       <span>🌍</span> {whereTo.length >= 2 ? "Global Search Results" : "Top Global Recommendations"}
@@ -584,7 +584,7 @@ export default function HomePage({ onNavigateToAuth }) {
       </section>
 
       {/* MAIN BODY CONTAINER */}
-      <main className="max-w-7xl mx-auto px-6 sm:px-12 pt-8 z-20 relative">
+      <main className="max-w-7xl mx-auto px-6 sm:px-12 pt-16 z-0 relative">
         {/* SECTION 1: TOP REGIONAL SELECTIONS (INFINITE RIGHT-TO-LEFT MARQUEE LOOP) */}
         <section id="regional" className="mb-16">
           <div className="flex items-center justify-between gap-4 mb-6 select-none">

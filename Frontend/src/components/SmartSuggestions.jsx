@@ -29,12 +29,12 @@ export default function SmartSuggestions({ onAddSuggestion }) {
   ];
 
   return (
-    <div className="bg-slate-900/90 border border-cyan-400/30 rounded-2xl p-6 shadow-2xl text-left select-none">
+    <div className="bg-[#0D2626] border border-[#5AD9BC]/30 rounded-2xl p-6 shadow-2xl text-left select-none">
       <div className="flex items-center gap-3 border-b border-white/10 pb-3 mb-4">
         <span className="text-2xl">🤖</span>
         <div>
           <h3 className="font-extrabold text-base text-white">Smart Companion Suggestions</h3>
-          <p className="text-xs text-cyan-300 font-medium">
+          <p className="text-xs text-[#72F0D0] font-medium">
             &quot;You&apos;ve completed today&apos;s planned activities. You have tomorrow free — here are nearby recommendations!&quot;
           </p>
         </div>
@@ -44,7 +44,7 @@ export default function SmartSuggestions({ onAddSuggestion }) {
         {suggestions.map((sug) => (
           <div
             key={sug.id}
-            className="group bg-slate-800/80 rounded-xl overflow-hidden border border-white/10 hover:border-cyan-400/50 hover:shadow-[0_0_20px_rgba(0,212,255,0.3)] transition-all flex flex-col justify-between"
+            className="group bg-[#123131] rounded-xl overflow-hidden border border-white/10 hover:border-[#42D6B5]/50 hover:shadow-[0_0_20px_rgba(32,201,176,0.3)] transition-all flex flex-col justify-between"
           >
             <div className="h-28 overflow-hidden relative">
               <img
@@ -59,17 +59,17 @@ export default function SmartSuggestions({ onAddSuggestion }) {
 
             <div className="p-3 flex flex-col justify-between flex-1">
               <div>
-                <span className="text-[9px] font-black uppercase text-cyan-400 block mb-0.5">
+                <span className="text-[9px] font-black uppercase text-[#72F0D0] block mb-0.5">
                   {sug.category} &bull; {sug.distance}
                 </span>
-                <strong className="block text-xs font-bold text-white leading-tight group-hover:text-cyan-200 transition-colors">
+                <strong className="block text-xs font-bold text-white leading-tight group-hover:text-[#72F0D0] transition-colors">
                   {sug.title}
                 </strong>
               </div>
 
               <button
                 onClick={() => onAddSuggestion && onAddSuggestion(sug)}
-                className="mt-3 w-full py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500 text-cyan-300 hover:text-slate-950 font-extrabold text-[11px] transition-all cursor-pointer border border-cyan-400/30"
+                className="mt-3 w-full py-1.5 rounded-lg bg-[#42D6B5]/20 hover:bg-[#20C9B0] text-[#72F0D0] hover:text-[#063D3A] font-extrabold text-[11px] transition-all cursor-pointer border border-[#42D6B5]/30"
               >
                 + Add to Free Day
               </button>

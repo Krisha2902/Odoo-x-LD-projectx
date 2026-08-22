@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import Navbar from "../components/Navbar";
+import Navbar from "../components/Navbar/Navbar";
 import SmartSuggestions from "../components/SmartSuggestions";
 import TripMap from "../components/TripMap";
 import PlaneCursor from "../components/PlaneCursor";
@@ -47,45 +47,45 @@ export default function OngoingTripPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans overflow-x-hidden pb-16 select-none">
+    <div className="min-h-screen bg-[#071C1C] text-white font-sans overflow-x-hidden pb-16 select-none">
       <PlaneCursor />
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-6 sm:px-12 pt-8">
+      <main className="max-w-7xl mx-auto px-6 sm:px-12 pt-24">
         {/* Top Live Banner */}
-        <div className="bg-gradient-to-r from-slate-900 via-slate-900/90 to-cyan-950/40 border border-emerald-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl mb-8 text-left relative overflow-hidden">
+        <div className="bg-gradient-to-r from-[#0D2626] via-[#0D2626]/90 to-[#123131] border border-[#5AD9BC]/30 rounded-3xl p-6 sm:p-8 shadow-2xl mb-8 text-left relative overflow-hidden">
           <div className="flex flex-wrap items-center justify-between gap-4 mb-6 z-10 relative">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping" />
-                <span className="text-xs font-black text-emerald-300 uppercase tracking-widest bg-emerald-500/20 px-3 py-1 rounded-full border border-emerald-400/40">
+                <span className="w-3 h-3 rounded-full bg-[#72F0D0] animate-ping" />
+                <span className="text-xs font-black text-[#72F0D0] uppercase tracking-widest bg-[#42D6B5]/20 px-3 py-1 rounded-full border border-[#42D6B5]/40">
                   LIVE ONGOING TRIP DASHBOARD
                 </span>
               </div>
               <h1 className="text-3xl sm:text-4xl font-black text-white uppercase tracking-tight">
                 {trip.title}
               </h1>
-              <p className="text-xs font-bold text-cyan-300 mt-1">
+              <p className="text-xs font-bold text-[#72F0D0] mt-1">
                 📍 Currently at: <strong>{trip.currentLocation}</strong>
               </p>
             </div>
 
             {/* Days Counter Progress Badge */}
-            <div className="bg-slate-800/90 border border-white/20 p-4 rounded-2xl text-center shadow-lg">
+            <div className="bg-[#123131]/90 border border-white/20 p-4 rounded-2xl text-center shadow-lg">
               <span className="text-xs text-zinc-400 font-bold uppercase block">Progress</span>
-              <strong className="text-2xl font-black text-cyan-400">
+              <strong className="text-2xl font-black text-[#72F0D0]">
                 Day {trip.currentDay} of {trip.totalDays}
               </strong>
-              <span className="text-[10px] text-emerald-300 font-bold block mt-1">
+              <span className="text-[10px] text-[#42D6B5] font-bold block mt-1">
                 {trip.daysCompleted} Days Done &bull; {trip.daysRemaining} Left
               </span>
             </div>
           </div>
 
           {/* Progress Line */}
-          <div className="w-full bg-slate-950 h-3 rounded-full overflow-hidden border border-white/10">
+          <div className="w-full bg-[#071C1C] h-3 rounded-full overflow-hidden border border-white/10">
             <div
-              className="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 transition-all duration-500"
+              className="h-full bg-gradient-to-r from-[#7AF0D2] via-[#4DE0C1] to-[#20C9B0] transition-all duration-500"
               style={{ width: `${(trip.currentDay / trip.totalDays) * 100}%` }}
             />
           </div>
@@ -94,12 +94,12 @@ export default function OngoingTripPage() {
         {/* TODAY'S SCHEDULE & LIVE BUDGET */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
           {/* TODAY'S SCHEDULE (7 COLS) */}
-          <div className="lg:col-span-7 bg-slate-900/90 border border-white/10 rounded-2xl p-6 shadow-2xl text-left">
+          <div className="lg:col-span-7 bg-[#0D2626] border border-[#5AD9BC]/20 rounded-2xl p-6 shadow-2xl text-left">
             <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
               <h2 className="text-lg font-black uppercase text-white tracking-tight flex items-center gap-2">
                 <span>⏰</span> Today&apos;s Schedule (Day {trip.currentDay})
               </h2>
-              <span className="text-xs text-cyan-300 font-bold">
+              <span className="text-xs text-[#72F0D0] font-bold">
                 {todaysActivities.filter((a) => a.completed).length} / {todaysActivities.length} Done
               </span>
             </div>
@@ -110,12 +110,12 @@ export default function OngoingTripPage() {
                   key={act.id}
                   className={`p-4 rounded-xl border transition-all flex items-center justify-between ${
                     act.completed
-                      ? "bg-slate-800/40 border-white/5 text-zinc-400"
-                      : "bg-slate-800 border-cyan-400/40 text-white shadow-lg"
+                      ? "bg-[#123131]/40 border-white/5 text-zinc-400"
+                      : "bg-[#123131] border-[#42D6B5]/40 text-white shadow-lg"
                   }`}
                 >
                   <div>
-                    <span className="text-[10px] font-black uppercase text-cyan-300 block mb-0.5">
+                    <span className="text-[10px] font-black uppercase text-[#72F0D0] block mb-0.5">
                       {act.time} &bull; {act.category}
                     </span>
                     <strong className="text-sm font-bold block">{act.title}</strong>
@@ -130,7 +130,7 @@ export default function OngoingTripPage() {
                     }
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                       act.completed
-                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-400/30"
+                        ? "bg-[#42D6B5]/20 text-[#72F0D0] border border-[#42D6B5]/30"
                         : "bg-white/10 hover:bg-white/20 text-white"
                     }`}
                   >
@@ -142,33 +142,33 @@ export default function OngoingTripPage() {
           </div>
 
           {/* LIVE BUDGET STATUS (5 COLS) */}
-          <div className="lg:col-span-5 bg-slate-900/90 border border-white/10 rounded-2xl p-6 shadow-2xl text-left">
+          <div className="lg:col-span-5 bg-[#0D2626] border border-[#5AD9BC]/20 rounded-2xl p-6 shadow-2xl text-left">
             <h2 className="text-lg font-black uppercase text-white tracking-tight mb-4 flex items-center gap-2">
               <span>💳</span> Live Budget Tracking
             </h2>
 
-            <div className="bg-slate-800 p-4 rounded-xl border border-white/10 mb-6">
+            <div className="bg-[#123131] p-4 rounded-xl border border-white/10 mb-6">
               <div className="flex justify-between items-baseline mb-2">
                 <span className="text-xs text-zinc-400 font-bold">Spent So Far</span>
-                <strong className="text-lg font-black text-cyan-400">
+                <strong className="text-lg font-black text-[#72F0D0]">
                   ${trip.totalSpent} / ${trip.budgetCap}
                 </strong>
               </div>
-              <div className="w-full bg-slate-950 h-2.5 rounded-full overflow-hidden border border-white/10">
+              <div className="w-full bg-[#071C1C] h-2.5 rounded-full overflow-hidden border border-white/10">
                 <div
-                  className="h-full bg-gradient-to-r from-cyan-400 to-emerald-400"
+                  className="h-full bg-gradient-to-r from-[#7AF0D2] to-[#20C9B0]"
                   style={{ width: `${(trip.totalSpent / trip.budgetCap) * 100}%` }}
                 />
               </div>
               <div className="flex justify-between text-[10px] text-zinc-400 font-bold mt-2">
                 <span>Remaining: ${trip.budgetCap - trip.totalSpent}</span>
-                <span>On Budget</span>
+                <span className="text-[#72F0D0]">On Budget</span>
               </div>
             </div>
 
             <Link
               to={`/trips/${trip.id}/details`}
-              className="block w-full py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-extrabold text-xs text-center border border-white/20"
+              className="block w-full py-2.5 rounded-xl bg-[#123131] hover:bg-[#1a4242] text-white font-extrabold text-xs text-center border border-white/20 transition-all"
             >
               View Full Trip Details &rarr;
             </Link>
@@ -181,7 +181,7 @@ export default function OngoingTripPage() {
         </div>
 
         {/* LIVE ROUTE MAP */}
-        <section className="text-left bg-slate-900/90 border border-white/10 rounded-2xl p-6 shadow-2xl">
+        <section className="text-left bg-[#0D2626] border border-[#5AD9BC]/20 rounded-2xl p-6 shadow-2xl">
           <h2 className="text-lg font-black uppercase text-white tracking-tight mb-4 flex items-center gap-2">
             <span>🗺️</span> Live Route &amp; Remaining Stops
           </h2>
