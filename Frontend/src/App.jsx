@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/login.jsx";
 
 import Navbar from "./components/Navbar/Navbar";
+import Footer from "./components/Footer/Footer";
 
 import Home from "./pages/Home/Home";
 import Explore from "./pages/Explore/Explore";
@@ -36,7 +37,7 @@ function App() {
           element={
             <>
               <Navbar />
-              <Home />
+              <Home />      
             </>
           }
         />
@@ -51,6 +52,7 @@ function App() {
             <>
               <Navbar />
               <Explore />
+              <Footer />  
             </>
           }
         />
@@ -65,6 +67,7 @@ function App() {
             <>
               <Navbar />
               <MyTrips />
+              <Footer />
             </>
           }
         />
@@ -79,7 +82,8 @@ function App() {
             <>
               <Navbar />
               <OngoingTrips />
-            </>
+              <Footer />
+            </>   
           }
         />
 
@@ -93,6 +97,7 @@ function App() {
             <>
               <Navbar />
               <Calendar />
+              <Footer />
             </>
           }
         />
@@ -107,6 +112,7 @@ function App() {
             <>
               <Navbar />
               <Profile />
+              <Footer />
             </>
           }
         />
@@ -121,6 +127,7 @@ function App() {
             <>
               <Navbar />
               <PlanTrip />
+              <Footer />
             </>
           }
         />
