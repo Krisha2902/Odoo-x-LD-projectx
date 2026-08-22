@@ -1,312 +1,344 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "../components/Navbar";
 import PlaneCursor from "../components/PlaneCursor";
 
 export default function ExplorePage() {
-  const [activeTab, setActiveTab] = useState("All");
-  const [selectedItem, setSelectedItem] = useState(null);
-
-  // Explore Categories Data
   const destinations = [
-    { id: "d1", name: "Bali", region: "Indonesia", rating: "4.9 ⭐", img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=600&q=80", desc: "Tropical paradise with lush terraced rice fields and sacred temples." },
-    { id: "d2", name: "Paris", region: "France", rating: "4.8 ⭐", img: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=600&q=80", desc: "City of lights, iconic Eiffel Tower, world-class art, and patisseries." },
-    { id: "d3", name: "Tokyo", region: "Japan", rating: "4.95 ⭐", img: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=600&q=80", desc: "Futuristic neon skyscrapers alongside ancient historic shrines." },
-    { id: "d4", name: "Santorini", region: "Greece", rating: "4.9 ⭐", img: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=600&q=80", desc: "Iconic whitewashed cliffside villages with Aegean sunset views." },
-    { id: "d5", name: "Dubai", region: "UAE", rating: "4.85 ⭐", img: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=600&q=80", desc: "Modern desert metropolis with Burj Khalifa and luxury shopping." },
-    { id: "d6", name: "Swiss Alps", region: "Switzerland", rating: "4.96 ⭐", img: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=600&q=80", desc: "Majestic snow-capped peaks, scenic train rides, and alpine lakes." },
+    {
+      id: "dest-1",
+      title: "BALI",
+      country: "INDONESIA",
+      tag: "📍 BALI • SOUTHEAST ASIA",
+      rating: "4.95 ⭐",
+      desc: "Immerse yourself in lush terraced rice fields, ancient sea temples, turquoise ocean waves, and spiritual wellness retreats.",
+      bgImage: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1920&q=80",
+      thumbnail: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=600&q=80",
+    },
+    {
+      id: "dest-2",
+      title: "THAILAND",
+      country: "ASIA",
+      tag: "📍 PHUKET • THAILAND",
+      rating: "4.92 ⭐",
+      desc: "Discover dramatic limestone karsts rising out of emerald Andaman waters, vibrant street night markets, and golden Buddhist pagodas.",
+      bgImage: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80",
+      thumbnail: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80",
+    },
+    {
+      id: "dest-3",
+      title: "KERALA",
+      country: "INDIA",
+      tag: "📍 GOD'S OWN COUNTRY • INDIA",
+      rating: "4.98 ⭐",
+      desc: "Cruise serene palm-fringed backwaters on traditional houseboats, witness Ayurvedic wellness, and explore misty tea gardens in Munnar.",
+      bgImage: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=1920&q=80",
+      thumbnail: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=600&q=80",
+    },
+    {
+      id: "dest-4",
+      title: "SWITZERLAND",
+      country: "EUROPE",
+      tag: "📍 SWISS ALPS • EUROPE",
+      rating: "4.96 ⭐",
+      desc: "Soak in panoramic snow-capped Matterhorn views, glacial lakes, world-class alpine skiing, and luxury mountain railways.",
+      bgImage: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1920&q=80",
+      thumbnail: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=600&q=80",
+    },
+    {
+      id: "dest-5",
+      title: "PARIS",
+      country: "FRANCE",
+      tag: "📍 PARIS • FRANCE",
+      rating: "4.89 ⭐",
+      desc: "Wander historic Haussmann boulevards, admire Louvre artistic treasures, and experience Michelin-starred dining under the Eiffel Tower.",
+      bgImage: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1920&q=80",
+      thumbnail: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=600&q=80",
+    },
+    {
+      id: "dest-6",
+      title: "JAPAN",
+      country: "EAST ASIA",
+      tag: "📍 KYOTO & TOKYO • JAPAN",
+      rating: "4.97 ⭐",
+      desc: "Experience the harmonious blend of ancient cherry blossom shrines, traditional tea ceremonies, and neon-lit futuristic metropolis.",
+      bgImage: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1920&q=80",
+      thumbnail: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=600&q=80",
+    },
   ];
 
-  const beaches = [
-    { id: "b1", name: "Kelingking Beach", location: "Nusa Penida, Bali", rating: "4.95 ⭐", img: "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=600&q=80", desc: "Dramatic T-Rex shaped cliff overlooks turquoise ocean waters." },
-    { id: "b2", name: "Navagio Shipwreck Beach", location: "Zakynthos, Greece", rating: "4.9 ⭐", img: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80", desc: "Exotic secluded cove featuring a historic stranded shipwreck." },
-    { id: "b3", name: "Baa Atoll Lagoon", location: "Maldives", rating: "4.98 ⭐", img: "https://images.unsplash.com/photo-1512100356356-de1b84283e18?auto=format&fit=crop&w=600&q=80", desc: "Pristine white sand bars surrounded by vibrant coral reefs." },
-  ];
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [bookmarked, setBookmarked] = useState({});
+  const [selectedDetailModal, setSelectedDetailModal] = useState(null);
 
-  const hotels = [
-    { id: "h1", name: "Viceroy Ubud Luxury Resort", location: "Bali, Indonesia", price: "$450 / night", rating: "4.9 ⭐", img: "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=600&q=80", desc: "Private jungle infinity pool villas overlooking Petanu River Valley." },
-    { id: "h2", name: "The Ritz Paris", location: "Paris, France", price: "$980 / night", rating: "4.95 ⭐", img: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=600&q=80", desc: "Opulent palatial hotel suite in the heart of Place Vendôme." },
-    { id: "h3", name: "Aman Tokyo Sanctuary", location: "Tokyo, Japan", price: "$720 / night", rating: "4.92 ⭐", img: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=600&q=80", desc: "Minimalist Zen luxury hotel floating high above Tokyo skyline." },
-  ];
+  const activeDest = destinations[activeIndex];
 
-  const activities = [
-    { id: "a1", name: "Manta Ray Snorkeling Safari", location: "Nusa Penida", cost: "$65", rating: "4.9 ⭐", img: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=600&q=80", desc: "Swim alongside giant oceanic manta rays in crystal clear bays." },
-    { id: "a2", name: "Eiffel Tower Sunset Champagne Tour", location: "Paris", cost: "$85", rating: "4.85 ⭐", img: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=600&q=80", desc: "Skip-the-line summit access with panoramic dusk views over Paris." },
-    { id: "a3", name: "Kyoto Bamboo Forest & Temple Hike", location: "Kyoto", cost: "$40", rating: "4.92 ⭐", img: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=600&q=80", desc: "Guided early morning walk through serene towering bamboo groves." },
-  ];
+  // Cycle Next & Prev
+  const handleNext = () => {
+    setActiveIndex((prev) => (prev + 1) % destinations.length);
+  };
 
-  const restaurants = [
-    { id: "r1", name: "Potato Head Beach Club & Restaurant", cuisine: "Balinese Fusion", rating: "4.8 ⭐", img: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=600&q=80", desc: "Oceanfront sunset dining with organic farm-to-table cuisine." },
-    { id: "r2", name: "Le Jules Verne", cuisine: "French Fine Dining", rating: "4.9 ⭐", img: "https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?auto=format&fit=crop&w=600&q=80", desc: "Michelin-starred culinary experience on the 2nd floor of Eiffel Tower." },
-    { id: "r3", name: "Sukiyabashi Jiro Omakase", cuisine: "Traditional Sushi", rating: "4.98 ⭐", img: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?auto=format&fit=crop&w=600&q=80", desc: "World-renowned master sushi chef omakase experience." },
-  ];
+  const handlePrev = () => {
+    setActiveIndex((prev) => (prev - 1 + destinations.length) % destinations.length);
+  };
+
+  const toggleBookmark = (id, e) => {
+    e.stopPropagation();
+    setBookmarked((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  // Keyboard Navigation Support
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "ArrowRight") handleNext();
+      if (e.key === "ArrowLeft") handlePrev();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans overflow-x-hidden pb-16 select-none">
+    <div className="relative min-h-screen w-full bg-slate-950 text-white font-sans overflow-hidden select-none">
       <PlaneCursor />
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-6 sm:px-12 pt-8">
-        {/* Header Title */}
-        <div className="text-left mb-8 border-b border-white/10 pb-6">
-          <span className="text-xs font-black uppercase tracking-widest text-cyan-400 block mb-1">
-            Global Discovery Hub
-          </span>
-          <h1 className="text-3xl sm:text-4xl font-black uppercase tracking-tight text-white">
-            Explore World Destinations &amp; Experiences
-          </h1>
-          <p className="text-xs text-zinc-400 font-medium">
-            Immerse yourself in top rated places, pristine beaches, luxury stays, activities, and dining.
-          </p>
+      {/* 1. SYNCHRONIZED HERO BACKDROP WITH SMOOTH ANIMATE PRESENCE CROSSFADE */}
+      <div className="absolute inset-0 z-0 overflow-hidden">
+        <AnimatePresence mode="popLayout">
+          <motion.div
+            key={activeDest.id}
+            initial={{ opacity: 0, scale: 1.08 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute inset-0"
+          >
+            <img
+              src={activeDest.bgImage}
+              alt={activeDest.title}
+              className="w-full h-full object-cover brightness-65"
+            />
+            {/* Ambient Dark Overlay Gradients */}
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-slate-950/70" />
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/40 to-transparent" />
+          </motion.div>
+        </AnimatePresence>
+      </div>
 
-          {/* Filter Bar */}
-          <div className="flex flex-wrap gap-2 mt-6">
-            {["All", "Destinations", "Beaches", "Hotels", "Things To Do", "Restaurants"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-full text-xs font-extrabold transition-all cursor-pointer ${
-                  activeTab === tab
-                    ? "bg-cyan-400 text-slate-950 shadow-[0_0_15px_rgba(0,212,255,0.4)]"
-                    : "bg-slate-900 border border-white/15 text-zinc-300 hover:bg-slate-800 hover:text-white"
-                }`}
+      {/* MAIN CAROUSEL CONTENT CONTAINER */}
+      <main className="relative z-10 max-w-7xl mx-auto px-6 sm:px-12 min-h-[calc(100vh-80px)] flex flex-col justify-between pt-8 pb-12">
+        {/* TOP SUB-HEADER BAR */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
+            <span className="text-xs font-black uppercase tracking-widest text-cyan-300 bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/10">
+              CINEMATIC DESTINATION SHOWCASE
+            </span>
+          </div>
+
+          <div className="text-xs font-bold text-zinc-400">
+            <span className="text-cyan-400 font-extrabold text-sm">0{activeIndex + 1}</span> / 0
+            {destinations.length}
+          </div>
+        </div>
+
+        {/* MIDDLE GRID LAYOUT: LEFT HERO TEXT REVEAL & RIGHT FLOATING QUEUE CAROUSEL */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center my-auto py-6">
+          {/* LEFT SIDE: HERO TITLE & STAGGER TEXT REVEAL (7 COLS) */}
+          <div className="lg:col-span-7 text-left pr-0 lg:pr-6">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeDest.id}
+                initial={{ opacity: 0, y: 35 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -30 }}
+                transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+                className="space-y-4"
               >
-                {tab}
-              </button>
+                {/* Location Pill Tag */}
+                <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-cyan-500/20 border border-cyan-400/40 backdrop-blur-md text-cyan-300 text-xs font-black uppercase tracking-widest shadow">
+                  <span>{activeDest.tag}</span>
+                </div>
+
+                {/* Staggered Destination Title */}
+                <h1 className="text-6xl sm:text-7xl lg:text-8xl font-black uppercase tracking-tight text-white leading-none drop-shadow-[0_10px_30px_rgba(0,0,0,0.8)]">
+                  {activeDest.title}
+                </h1>
+
+                {/* Subtitle / Descriptive Snippet */}
+                <p className="text-sm sm:text-base text-zinc-200 font-medium max-w-xl leading-relaxed drop-shadow">
+                  {activeDest.desc}
+                </p>
+
+                {/* Frosted Glass CTA Button */}
+                <div className="pt-4 flex flex-wrap items-center gap-4">
+                  <button
+                    onClick={() => setSelectedDetailModal(activeDest)}
+                    className="px-8 py-3.5 rounded-full bg-white/15 hover:bg-cyan-400 hover:text-slate-950 text-white font-extrabold text-xs uppercase tracking-wider backdrop-blur-xl border border-white/30 shadow-[0_10px_30px_rgba(0,0,0,0.4)] hover:shadow-[0_0_25px_rgba(0,212,255,0.6)] active:scale-95 transition-all cursor-pointer flex items-center gap-2"
+                  >
+                    <span>Explore Destination</span>
+                    <span className="text-sm">→</span>
+                  </button>
+
+                  <button
+                    onClick={(e) => toggleBookmark(activeDest.id, e)}
+                    className="p-3.5 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 transition-all cursor-pointer"
+                    title="Bookmark Destination"
+                  >
+                    <span>{bookmarked[activeDest.id] ? "❤️" : "🤍"}</span>
+                  </button>
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* RIGHT SIDE: FLOATING QUEUE CAROUSEL OF UPCOMING DESTINATION THUMBNAILS (5 COLS) */}
+          <div className="lg:col-span-5 flex items-center justify-end overflow-visible">
+            <div className="flex gap-4 overflow-x-auto custom-scrollbar py-4 px-2 max-w-full">
+              {destinations.map((dest, idx) => {
+                const isActive = idx === activeIndex;
+                return (
+                  <motion.div
+                    key={dest.id}
+                    layoutId={`thumb-${dest.id}`}
+                    onClick={() => setActiveIndex(idx)}
+                    whileHover={{ scale: 1.05, y: -6 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={`relative min-w-[150px] sm:min-w-[170px] h-[230px] rounded-2xl overflow-hidden cursor-pointer border transition-all duration-300 flex flex-col justify-between p-3 text-left shadow-2xl flex-shrink-0 ${
+                      isActive
+                        ? "border-cyan-400 ring-4 ring-cyan-400/30 scale-105 shadow-[0_0_30px_rgba(0,212,255,0.4)]"
+                        : "border-white/20 opacity-75 hover:opacity-100 hover:border-white/50"
+                    }`}
+                  >
+                    {/* Thumbnail Image */}
+                    <img
+                      src={dest.thumbnail}
+                      alt={dest.title}
+                      className="absolute inset-0 w-full h-full object-cover -z-10 brightness-75"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent -z-10" />
+
+                    {/* Top Pill & Bookmark */}
+                    <div className="flex items-center justify-between z-10">
+                      <span className="bg-black/60 backdrop-blur-md rounded-full px-2 py-0.5 text-[9px] font-black text-cyan-300 border border-white/20">
+                        {dest.rating}
+                      </span>
+                      <button
+                        onClick={(e) => toggleBookmark(dest.id, e)}
+                        className="text-xs hover:scale-125 transition-transform"
+                      >
+                        {bookmarked[dest.id] ? "❤️" : "🤍"}
+                      </button>
+                    </div>
+
+                    {/* Bottom Title Tag */}
+                    <div className="z-10">
+                      <span className="text-[9px] font-bold text-zinc-300 uppercase tracking-wider block">
+                        {dest.country}
+                      </span>
+                      <strong className="text-sm font-black text-white uppercase tracking-tight block">
+                        {dest.title}
+                      </strong>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* BOTTOM NAVIGATION CONTROLS & PAGINATION DOTS */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-white/10">
+          {/* Pagination Indicators (Dots) */}
+          <div className="flex items-center gap-2">
+            {destinations.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setActiveIndex(idx)}
+                className={`h-2 rounded-full transition-all cursor-pointer ${
+                  activeIndex === idx
+                    ? "w-8 bg-cyan-400 shadow-[0_0_10px_rgba(0,212,255,0.8)]"
+                    : "w-2 bg-white/30 hover:bg-white/60"
+                }`}
+              />
             ))}
           </div>
-        </div>
 
-        {/* SECTION 1: DESTINATIONS */}
-        {(activeTab === "All" || activeTab === "Destinations") && (
-          <section className="mb-12 text-left">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-black uppercase text-white tracking-tight flex items-center gap-2">
-                <span>🏙️</span> Popular Destinations
-              </h2>
-              <span className="text-xs text-cyan-300 font-bold">{destinations.length} Top Cities</span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {destinations.map((d) => (
-                <div
-                  key={d.id}
-                  onClick={() => setSelectedItem(d)}
-                  className="group bg-slate-900/80 rounded-2xl overflow-hidden border border-white/10 shadow-xl hover:shadow-[0_0_30px_rgba(0,212,255,0.35)] hover:border-cyan-400/50 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer"
-                >
-                  <div className="h-52 overflow-hidden relative">
-                    <img src={d.img} alt={d.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                    <span className="absolute top-3 right-3 bg-black/60 backdrop-blur-md rounded-full px-3 py-1 text-xs font-bold text-white">
-                      {d.rating}
-                    </span>
-                    <span className="absolute bottom-3 left-3 bg-cyan-500/90 text-slate-950 font-black text-[10px] px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                      {d.region}
-                    </span>
-                  </div>
-                  <div className="p-5">
-                    <h3 className="font-extrabold text-lg text-white mb-1 group-hover:text-cyan-300 transition-colors">
-                      {d.name}
-                    </h3>
-                    <p className="text-xs text-zinc-400 font-medium line-clamp-2">{d.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* SECTION 2: BEACHES */}
-        {(activeTab === "All" || activeTab === "Beaches") && (
-          <section className="mb-12 text-left">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-black uppercase text-white tracking-tight flex items-center gap-2">
-                <span>🏖️</span> Iconic Tropical Beaches
-              </h2>
-              <span className="text-xs text-cyan-300 font-bold">{beaches.length} Coastal Spots</span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              {beaches.map((b) => (
-                <div
-                  key={b.id}
-                  onClick={() => setSelectedItem(b)}
-                  className="group bg-slate-900/80 rounded-2xl overflow-hidden border border-white/10 shadow-xl hover:shadow-[0_0_30px_rgba(0,212,255,0.35)] hover:border-cyan-400/50 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer"
-                >
-                  <div className="h-48 overflow-hidden relative">
-                    <img src={b.img} alt={b.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                    <span className="absolute top-3 right-3 bg-black/60 backdrop-blur-md rounded-full px-3 py-1 text-xs font-bold text-white">
-                      {b.rating}
-                    </span>
-                  </div>
-                  <div className="p-4">
-                    <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider block mb-1">
-                      📍 {b.location}
-                    </span>
-                    <h3 className="font-extrabold text-base text-white mb-1 group-hover:text-cyan-300 transition-colors">
-                      {b.name}
-                    </h3>
-                    <p className="text-xs text-zinc-400 font-medium">{b.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* SECTION 3: HOTELS */}
-        {(activeTab === "All" || activeTab === "Hotels") && (
-          <section className="mb-12 text-left">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-black uppercase text-white tracking-tight flex items-center gap-2">
-                <span>🏨</span> Luxury Stays &amp; Resorts
-              </h2>
-              <span className="text-xs text-cyan-300 font-bold">{hotels.length} Stays</span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              {hotels.map((h) => (
-                <div
-                  key={h.id}
-                  onClick={() => setSelectedItem(h)}
-                  className="group bg-slate-900/80 rounded-2xl overflow-hidden border border-white/10 shadow-xl hover:shadow-[0_0_30px_rgba(0,212,255,0.35)] hover:border-cyan-400/50 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer"
-                >
-                  <div className="h-48 overflow-hidden relative">
-                    <img src={h.img} alt={h.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                    <span className="absolute top-3 right-3 bg-black/60 backdrop-blur-md rounded-full px-3 py-1 text-xs font-bold text-white">
-                      {h.rating}
-                    </span>
-                    <span className="absolute bottom-3 left-3 bg-emerald-500/90 text-slate-950 font-black text-[10px] px-2.5 py-0.5 rounded-full">
-                      {h.price}
-                    </span>
-                  </div>
-                  <div className="p-4">
-                    <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider block mb-1">
-                      📍 {h.location}
-                    </span>
-                    <h3 className="font-extrabold text-base text-white mb-1 group-hover:text-cyan-300 transition-colors">
-                      {h.name}
-                    </h3>
-                    <p className="text-xs text-zinc-400 font-medium">{h.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* SECTION 4: THINGS TO DO */}
-        {(activeTab === "All" || activeTab === "Things To Do") && (
-          <section className="mb-12 text-left">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-black uppercase text-white tracking-tight flex items-center gap-2">
-                <span>🛶</span> Things To Do &amp; Activities
-              </h2>
-              <span className="text-xs text-cyan-300 font-bold">{activities.length} Experiences</span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              {activities.map((a) => (
-                <div
-                  key={a.id}
-                  onClick={() => setSelectedItem(a)}
-                  className="group bg-slate-900/80 rounded-2xl overflow-hidden border border-white/10 shadow-xl hover:shadow-[0_0_30px_rgba(0,212,255,0.35)] hover:border-cyan-400/50 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer"
-                >
-                  <div className="h-48 overflow-hidden relative">
-                    <img src={a.img} alt={a.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                    <span className="absolute top-3 right-3 bg-black/60 backdrop-blur-md rounded-full px-3 py-1 text-xs font-bold text-white">
-                      {a.rating}
-                    </span>
-                    <span className="absolute bottom-3 left-3 bg-cyan-500/90 text-slate-950 font-black text-[10px] px-2.5 py-0.5 rounded-full">
-                      {a.cost}
-                    </span>
-                  </div>
-                  <div className="p-4">
-                    <span className="text-[10px] font-bold text-cyan-400 uppercase tracking-wider block mb-1">
-                      📍 {a.location}
-                    </span>
-                    <h3 className="font-extrabold text-base text-white mb-1 group-hover:text-cyan-300 transition-colors">
-                      {a.name}
-                    </h3>
-                    <p className="text-xs text-zinc-400 font-medium">{a.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* SECTION 5: RESTAURANTS */}
-        {(activeTab === "All" || activeTab === "Restaurants") && (
-          <section className="mb-12 text-left">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-black uppercase text-white tracking-tight flex items-center gap-2">
-                <span>🍽️</span> World Culinary &amp; Restaurants
-              </h2>
-              <span className="text-xs text-cyan-300 font-bold">{restaurants.length} Dining Spots</span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-              {restaurants.map((r) => (
-                <div
-                  key={r.id}
-                  onClick={() => setSelectedItem(r)}
-                  className="group bg-slate-900/80 rounded-2xl overflow-hidden border border-white/10 shadow-xl hover:shadow-[0_0_30px_rgba(0,212,255,0.35)] hover:border-cyan-400/50 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer"
-                >
-                  <div className="h-48 overflow-hidden relative">
-                    <img src={r.img} alt={r.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
-                    <span className="absolute top-3 right-3 bg-black/60 backdrop-blur-md rounded-full px-3 py-1 text-xs font-bold text-white">
-                      {r.rating}
-                    </span>
-                  </div>
-                  <div className="p-4">
-                    <span className="text-[10px] font-bold text-amber-400 uppercase tracking-wider block mb-1">
-                      👨‍🍳 {r.cuisine}
-                    </span>
-                    <h3 className="font-extrabold text-base text-white mb-1 group-hover:text-cyan-300 transition-colors">
-                      {r.name}
-                    </h3>
-                    <p className="text-xs text-zinc-400 font-medium">{r.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-      </main>
-
-      {/* Item Detail Modal */}
-      {selectedItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-fade-in-up">
-          <div className="bg-slate-900 border border-cyan-400/40 rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl text-left relative">
-            <div className="h-64 relative">
-              <img src={selectedItem.img} alt={selectedItem.name} className="w-full h-full object-cover" />
-              <button
-                onClick={() => setSelectedItem(null)}
-                className="absolute top-4 right-4 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border border-white/20"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider">
-                  {selectedItem.region || selectedItem.location || selectedItem.cuisine}
-                </span>
-                <span className="text-xs font-bold text-white bg-white/10 px-2.5 py-1 rounded-full">
-                  {selectedItem.rating}
-                </span>
-              </div>
-              <h3 className="text-xl font-black text-white mb-2">{selectedItem.name}</h3>
-              <p className="text-xs text-zinc-300 leading-relaxed mb-6">{selectedItem.desc}</p>
-              <button
-                onClick={() => setSelectedItem(null)}
-                className="w-full py-2.5 rounded-xl bg-cyan-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow hover:bg-cyan-300"
-              >
-                Close View
-              </button>
-            </div>
+          {/* Next / Prev Arrow Buttons */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handlePrev}
+              className="w-11 h-11 rounded-full bg-slate-900/80 hover:bg-cyan-500 hover:text-slate-950 border border-white/20 flex items-center justify-center text-white text-sm font-black transition-all cursor-pointer shadow-lg active:scale-90"
+              title="Previous Destination"
+            >
+              ←
+            </button>
+            <button
+              onClick={handleNext}
+              className="w-11 h-11 rounded-full bg-cyan-400 hover:bg-cyan-300 text-slate-950 border border-cyan-300 flex items-center justify-center text-sm font-black transition-all cursor-pointer shadow-[0_0_20px_rgba(0,212,255,0.5)] active:scale-90"
+              title="Next Destination"
+            >
+              →
+            </button>
           </div>
         </div>
-      )}
+      </main>
+
+      {/* DESTINATION DETAIL MODAL POPUP */}
+      <AnimatePresence>
+        {selectedDetailModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 select-none">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-slate-900 border border-cyan-400/40 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl text-left relative"
+            >
+              <div className="h-64 relative">
+                <img
+                  src={selectedDetailModal.bgImage}
+                  alt={selectedDetailModal.title}
+                  className="w-full h-full object-cover"
+                />
+                <button
+                  onClick={() => setSelectedDetailModal(null)}
+                  className="absolute top-4 right-4 bg-black/60 text-white w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border border-white/20"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-cyan-400 uppercase tracking-widest">
+                    {selectedDetailModal.tag}
+                  </span>
+                  <span className="text-xs font-bold text-white bg-white/10 px-3 py-1 rounded-full">
+                    {selectedDetailModal.rating}
+                  </span>
+                </div>
+
+                <h3 className="text-3xl font-black text-white uppercase tracking-tight">
+                  {selectedDetailModal.title}
+                </h3>
+
+                <p className="text-xs text-zinc-300 leading-relaxed font-medium">
+                  {selectedDetailModal.desc}
+                </p>
+
+                <div className="pt-2 flex justify-end">
+                  <button
+                    onClick={() => setSelectedDetailModal(null)}
+                    className="px-6 py-2.5 rounded-full bg-cyan-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow hover:bg-cyan-300"
+                  >
+                    Close Showcase
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
