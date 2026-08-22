@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { Routes, Route } from "react-router-dom";
 
 import Navbar from "./components/Navbar/Navbar";
@@ -53,3 +54,13 @@ function App() {
 }
 
 export default App;
+=======
+import LoginPage from './pages/login.jsx'
+
+function App() {
+  return <LoginPage />
+}
+
+export default App
+
+>>>>>>> 62efed93cb2573795e30394ce9db94fcc68c170d
