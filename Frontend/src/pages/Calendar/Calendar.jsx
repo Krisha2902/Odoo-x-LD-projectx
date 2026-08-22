@@ -147,6 +147,7 @@ function Calendar() {
           </div>
         </section>
       </div>
+      <PlaneCursor />
     </main>
   );
 }

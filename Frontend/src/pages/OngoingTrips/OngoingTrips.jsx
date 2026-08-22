@@ -237,6 +237,7 @@ function OngoingTrips() {
           </button>
         </div>
       </div>
+      <PlaneCursor />
     </main>
   );
 }
