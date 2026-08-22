@@ -52,6 +52,7 @@ router.post('/', authMiddleware, async (req, res) => {
     emitTripEvent(tripId, 'item:created', { item: newItem, stopId });
 
     res.status(201).json({ item: newItem });
+    res.status(201).json({ item: result.rows[0] });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: error.errors } });
@@ -97,6 +98,7 @@ router.patch('/:id', authMiddleware, async (req, res) => {
     }
 
     res.json({ item: updatedItem });
+    res.json({ item: result.rows[0] });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: error.errors } });
@@ -127,6 +129,10 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 
     emitTripEvent(trip_id, 'item:deleted', { itemId: parseInt(id, 10), stopId: stop_id });
 
+    const result = await pool.query(`DELETE FROM itinerary_items WHERE id = $1 RETURNING id`, [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Item not found' } });
+    }
     res.json({ message: 'Item deleted' });
   } catch (error) {
     res.status(500).json({ error: { code: 'SERVER_ERROR', message: error.message } });

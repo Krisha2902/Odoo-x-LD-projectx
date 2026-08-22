@@ -12,6 +12,8 @@ const stopSchema = z.object({
   country: z.string().optional().default("India"),
   lat: z.number().optional().default(0.0),
   lng: z.number().optional().default(0.0),
+const stopSchema = z.object({
+  city_id: z.number().int().positive(),
   order_index: z.number().int().nonnegative(),
   start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -51,7 +53,7 @@ router.post('/', authMiddleware, async (req, res) => {
       `INSERT INTO stops (trip_id, city_id, order_index, start_date, end_date)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [tripId, cityId, parsed.order_index, parsed.start_date, parsed.end_date]
+      [tripId, parsed.city_id, parsed.order_index, parsed.start_date, parsed.end_date]
     );
 
     res.status(201).json({ stop: stopRes.rows[0] });
