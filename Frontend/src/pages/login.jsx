@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import bgLogin from "../assets/bg-login.jpg";
 import PlaneCursor from "../components/PlaneCursor";
 import { useAuth } from "../context/AuthContext";
@@ -7,8 +7,17 @@ import { apiClient, setToken } from "../api/client";
 
 export default function LoginPage({ onNavigateToHome, onAuthSuccess }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, signup } = useAuth();
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(location.pathname === "/signup");
+
+  useEffect(() => {
+    if (location.pathname === "/signup") {
+      setIsSignUp(true);
+    } else if (location.pathname === "/login") {
+      setIsSignUp(false);
+    }
+  }, [location.pathname]);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
@@ -508,7 +517,10 @@ export default function LoginPage({ onNavigateToHome, onAuthSuccess }) {
               Don't have an account?{" "}
               <button
                 type="button"
-                onClick={() => setIsSignUp(true)}
+                onClick={() => {
+                  setIsSignUp(true);
+                  navigate("/signup", { replace: true });
+                }}
                 className="text-[#0096B4] font-bold hover:underline cursor-pointer ml-1"
               >
                 Create new account
@@ -798,7 +810,10 @@ export default function LoginPage({ onNavigateToHome, onAuthSuccess }) {
               Already have an account?{" "}
               <button
                 type="button"
-                onClick={() => setIsSignUp(false)}
+                onClick={() => {
+                  setIsSignUp(false);
+                  navigate("/login", { replace: true });
+                }}
                 className="text-[#0096B4] font-bold hover:underline cursor-pointer ml-1"
               >
                 Log In
