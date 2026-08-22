@@ -52,7 +52,7 @@
   }
 }
 
-body, a, button, input, label, select, textarea {
+*, body, a, button, input, label, select, textarea, div, span, img, svg {
   cursor: none !important;
 }
 

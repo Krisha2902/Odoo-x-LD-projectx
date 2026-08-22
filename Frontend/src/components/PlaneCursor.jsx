@@ -62,14 +62,23 @@ export default function PlaneCursor() {
         })`,
       }}
     >
-      {/* Black Jet Airplane SVG */}
-      <svg
-        className="w-7 h-7 text-black drop-shadow-[0_2px_6px_rgba(0,0,0,0.4)]"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-      >
-        <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
-      </svg>
+      {/* Dynamic Glowing Jet Airplane - High Contrast across light & dark backgrounds */}
+      <div className="relative flex items-center justify-center">
+        {/* Ambient Engine Aura Glow */}
+        <div className="absolute w-8 h-8 rounded-full bg-cyan-400/40 blur-md animate-pulse pointer-events-none" />
+
+        {/* High-visibility Jet SVG with crisp white stroke & vibrant cyan fill */}
+        <svg
+          className="w-8 h-8 drop-shadow-[0_0_12px_rgba(0,240,255,0.9)] text-cyan-400"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          stroke="#ffffff"
+          strokeWidth="1.2"
+          strokeLinejoin="round"
+        >
+          <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+        </svg>
+      </div>
     </div>
   );
 }
