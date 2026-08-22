@@ -1,8 +1,13 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import bgLogin from "../assets/bg-login.jpg";
 import PlaneCursor from "../components/PlaneCursor";
+import { useAuth } from "../context/AuthContext";
 
-export default function LoginPage() {
+export default function LoginPage({ onNavigateToHome }) {
+  const navigate = useNavigate();
+  const { login, signup } = useAuth();
+
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -148,20 +153,30 @@ export default function LoginPage() {
 
 
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    // Handle authentication logic here
+    await login(email, password);
+    navigate("/trips");
   };
 
-  const handleSignUpSubmit = (e) => {
+  const handleSignUpSubmit = async (e) => {
     e.preventDefault();
-    // Handle signup logic here
+    await signup(fullName, signUpEmail, signUpPassword);
+    navigate("/trips");
   };
 
   return (
     <main className="relative min-h-screen w-full flex items-center justify-between px-8 sm:px-16 lg:px-24 overflow-hidden font-sans">
       {/* Dynamic Black Airplane Cursor */}
       <PlaneCursor />
+
+      {/* Top Left Back to Home Button */}
+      <button
+        onClick={onNavigateToHome}
+        className="absolute top-6 left-8 sm:left-16 z-30 flex items-center gap-2 px-4 py-2 rounded-full bg-black/40 hover:bg-black/60 border border-white/20 text-white text-xs font-bold transition-all cursor-pointer backdrop-blur-md"
+      >
+        <span>&larr;</span> Back to Home
+      </button>
 
       {/* 1. Fullscreen Background Image with Slow Breathing Zoom */}
       <img
