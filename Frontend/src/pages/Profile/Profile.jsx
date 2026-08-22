@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   UserRound,
   MapPin,
@@ -13,145 +13,139 @@ import {
   Compass,
   Star,
   ExternalLink,
+  ShieldCheck,
+  LogOut,
+  Plane,
+  Plus,
+  Loader2,
 } from "lucide-react";
 import PlaneCursor from "../../components/PlaneCursor";
 import { useAuth } from "../../context/AuthContext";
+import { tripsAPI, userAPI } from "../../services/api"; // Ensure userAPI is exported from your api service
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, logout, updateUser } = useAuth();
+  const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState("liked"); // 'liked' | 'completed' | 'badges'
+  const [activeTab, setActiveTab] = useState("completed"); // 'completed' | 'liked' | 'badges'
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Profile Form State
-  const [profileData, setProfileData] = useState({
-    name: user?.name || "Alex Rivera",
-    username: "@alex_explorer",
-    bio: "Passport full of stamps & heart full of wanderlust ✈️. Always hunting for secret turquoise beaches, local culinary treasures, and quiet mountain sunrises.",
-    location: "San Francisco, CA",
-    joinedDate: "January 2025",
-    avatar:
-      user?.avatar ||
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
-    coverBg:
-      "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80",
+  // Dynamic Data States
+  const [userTrips, setUserTrips] = useState([]);
+  const [likedPlaces, setLikedPlaces] = useState([]);
+
+  // Editable Profile Form State
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    username: "",
+    bio: "",
+    location: "",
+    avatar: "",
+    coverBg: "",
   });
 
-  // Liked Places Data
-  const likedPlaces = [
-    {
-      id: "like-1",
-      title: "Uluwatu & Seminyak",
-      country: "Bali, Indonesia",
-      tag: "📍 SOUTHEAST ASIA",
-      rating: "4.98 ⭐",
-      category: "Beach & Wellness",
-      img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=800&q=80",
-      desc: "Lush terraced rice fields, sacred cliffside sea temples, and world-class surf breaks.",
-    },
-    {
-      id: "like-2",
-      title: "Oia & Fira",
-      country: "Santorini, Greece",
-      tag: "📍 AEGEAN SEA",
-      rating: "4.95 ⭐",
-      category: "Island & Romance",
-      img: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=800&q=80",
-      desc: "Whitewashed Aegean cliffside villas, cobalt-blue domes, and breathtaking caldera sunsets.",
-    },
-    {
-      id: "like-3",
-      title: "Kyoto & Arashiyama",
-      country: "Japan",
-      tag: "📍 EAST ASIA",
-      rating: "4.96 ⭐",
-      category: "Culture & Nature",
-      img: "https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80",
-      desc: "Historic bamboo groves, cherry blossom torii gates, and centuries-old zen temples.",
-    },
-    {
-      id: "like-4",
-      title: "Zermatt & Matterhorn",
-      country: "Switzerland",
-      tag: "📍 SWISS ALPS",
-      rating: "4.94 ⭐",
-      category: "Mountain & Adventure",
-      img: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=80",
-      desc: "Snow-capped alpine peaks, scenic glacier express railways, and world-class skiing.",
-    },
-    {
-      id: "like-5",
-      title: "Amalfi Coast & Positano",
-      country: "Italy",
-      tag: "📍 MEDITERRANEAN",
-      rating: "4.91 ⭐",
-      category: "Coastal Luxury",
-      img: "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&w=800&q=80",
-      desc: "Pastel cliffside villages tumbling into turquoise Tyrrhenian waters and lemon groves.",
-    },
-    {
-      id: "like-6",
-      title: "Reykjavik & Golden Circle",
-      country: "Iceland",
-      tag: "📍 NORTH EUROPE",
-      rating: "4.97 ⭐",
-      category: "Aurora & Geysers",
-      img: "https://images.unsplash.com/photo-1504893524553-b855bce32c67?auto=format&fit=crop&w=800&q=80",
-      desc: "Dancing Northern Lights, thermal blue lagoons, roaring waterfalls, and volcanic black sand beaches.",
-    },
-  ];
+  // Sync state whenever the authenticated user updates
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || "Explorer User",
+        email: user.email || "user@globetrotter.io",
+        username: user.username || (user.email ? `@${user.email.split("@")[0]}` : "@explorer"),
+        bio: user.bio || "Passport full of stamps & wanderlust in my veins ✈️.",
+        location: user.location || "Global Explorer",
+        avatar: user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name || "Explorer"}`,
+        coverBg: user.coverBg || "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80",
+      });
+    }
+  }, [user]);
 
-  // Completed Trips Data
-  const completedTrips = [
-    {
-      id: "trip-comp-1",
-      title: "Dubai Desert & Skyline Expedition",
-      dates: "10 Jan — 18 Jan 2026",
-      duration: "8 Days",
-      stops: "Dubai • Abu Dhabi",
-      totalSpent: "$2,850",
-      rating: 5,
-      coverImg: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80",
-      memoriesCount: 42,
-      review: "Riding camels through sunset dunes and dining on top of Burj Khalifa was unforgettable!",
-    },
-    {
-      id: "trip-comp-2",
-      title: "French Riviera & Paris Romance",
-      dates: "12 May — 22 May 2025",
-      duration: "10 Days",
-      stops: "Paris • Nice • Monaco",
-      totalSpent: "$4,200",
-      rating: 5,
-      coverImg: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=800&q=80",
-      memoriesCount: 68,
-      review: "Louvre morning tours, croissant tastings, and yachting along the Côte d'Azur.",
-    },
-    {
-      id: "trip-comp-3",
-      title: "Thai Islands & Bangkok Night Markets",
-      dates: "02 Nov — 14 Nov 2024",
-      duration: "12 Days",
-      stops: "Bangkok • Phuket • Phi Phi Islands",
-      totalSpent: "$1,950",
-      rating: 5,
-      coverImg: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
-      memoriesCount: 55,
-      review: "Emerald water longtail boats, street food feasts, and peaceful elephant sanctuaries.",
-    },
-  ];
+  // Fetch real User Trips & Saved Places from backend
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
 
-  // Badges Earned
+    Promise.allSettled([
+      tripsAPI.getAll ? tripsAPI.getAll() : Promise.resolve({ trips: [] }),
+      userAPI?.getSavedPlaces ? userAPI.getSavedPlaces() : Promise.resolve({ places: [] }),
+    ])
+      .then(([tripsRes, placesRes]) => {
+        if (!isMounted) return;
+
+        if (tripsRes.status === "fulfilled" && tripsRes.value?.trips) {
+          setUserTrips(tripsRes.value.trips);
+        } else if (user?.trips) {
+          setUserTrips(user.trips);
+        }
+
+        if (placesRes.status === "fulfilled" && placesRes.value?.places) {
+          setLikedPlaces(placesRes.value.places);
+        } else if (user?.savedPlaces) {
+          setLikedPlaces(user.savedPlaces);
+        }
+      })
+      .catch((err) => console.error("Error loading user profile data:", err))
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
+
+  // Derived Dynamic Statistics
+  const completedTripsCount = userTrips.length;
+  const milesTraveled = user?.miles_traveled || completedTripsCount * 2850;
+
+  // Dynamic Badges based on real user actions
   const badges = [
-    { name: "Globe Trotter", level: "Gold", icon: "🌐", desc: "Visited over 10 international countries" },
-    { name: "Beach Nomad", level: "Master", icon: "🏖️", desc: "Saved & visited 15 tropical beach spots" },
-    { name: "Itinerary Architect", level: "Elite", icon: "🗺️", desc: "Created 20+ detailed travel plans" },
-    { name: "Memory Collector", level: "Pro", icon: "📸", desc: "Uploaded 100+ trip memories" },
+    {
+      name: "Globe Trotter",
+      level: completedTripsCount >= 3 ? "Gold" : completedTripsCount > 0 ? "Silver" : "Bronze",
+      icon: "🌐",
+      desc: completedTripsCount > 0 ? `Completed ${completedTripsCount} customized itineraries` : "Plan your first trip to unlock",
+    },
+    {
+      name: "Destination Collector",
+      level: likedPlaces.length >= 5 ? "Elite" : likedPlaces.length > 0 ? "Explorer" : "Novice",
+      icon: "🏖️",
+      desc: likedPlaces.length > 0 ? `Curated ${likedPlaces.length} saved destinations` : "Save your favorite spots to unlock",
+    },
+    {
+      name: "Verified Account",
+      level: "Pro",
+      icon: "✨",
+      desc: `Member since ${user?.created_at ? new Date(user.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "2025"}`,
+    },
   ];
 
-  const handleProfileSave = (e) => {
+  // Save changes to API & Context
+  const handleProfileSave = async (e) => {
     e.preventDefault();
-    setIsEditing(false);
+    setIsSaving(true);
+    try {
+      if (userAPI?.updateProfile) {
+        await userAPI.updateProfile(formData);
+      }
+      if (updateUser) {
+        updateUser(formData);
+      } else {
+        localStorage.setItem("globetrotter_user", JSON.stringify({ ...user, ...formData }));
+      }
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Failed to update profile:", err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
   };
 
   return (
@@ -161,13 +155,13 @@ export default function Profile() {
       {/* HERO COVER HEADER */}
       <div className="relative h-72 sm:h-96 w-full overflow-hidden">
         <img
-          src={profileData.coverBg}
+          src={formData.coverBg}
           alt="Cover"
-          className="w-full h-full object-cover brightness-65"
+          className="w-full h-full object-cover brightness-75"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#071C1C] via-[#071C1C]/40 to-transparent" />
 
-        <div className="absolute top-24 right-6 sm:right-12 z-10">
+        <div className="absolute top-24 right-6 sm:right-12 z-10 flex items-center gap-3">
           <button
             onClick={() => setIsEditing(true)}
             className="px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/20 font-bold text-xs flex items-center gap-2 shadow-lg transition-all cursor-pointer hover:scale-105"
@@ -175,21 +169,29 @@ export default function Profile() {
             <Edit3 className="w-4 h-4 text-[#72F0D0]" />
             <span>Edit Profile</span>
           </button>
+
+          <button
+            onClick={handleLogout}
+            className="px-4 py-2.5 rounded-full bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 backdrop-blur-md border border-rose-500/30 font-bold text-xs flex items-center gap-1.5 shadow-lg transition-all cursor-pointer hover:scale-105"
+          >
+            <LogOut className="w-4 h-4" />
+            <span>Sign Out</span>
+          </button>
         </div>
       </div>
 
       {/* MAIN CONTAINER */}
       <main className="max-w-7xl mx-auto px-6 sm:px-12 -mt-24 relative z-10 text-left">
-        {/* PROFILE HEADER CARD */}
-        <div className="bg-[#0D2626] border border-[#5AD9BC]/25 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl mb-10">
+        {/* USER PROFILE CARD */}
+        <div className="bg-[#0D2626] border border-[#5AD9BC]/25 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl mb-6">
           <div className="flex flex-col md:flex-row items-center md:items-end justify-between gap-6">
             <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6 text-center sm:text-left">
-              {/* Profile Picture Avatar */}
+              {/* Dynamic User Avatar */}
               <div className="relative group">
                 <img
-                  src={profileData.avatar}
-                  alt={profileData.name}
-                  className="w-32 h-32 sm:w-36 sm:h-36 rounded-full object-cover border-4 border-[#071C1C] shadow-[0_0_30px_rgba(66,214,181,0.4)]"
+                  src={formData.avatar}
+                  alt={formData.name}
+                  className="w-32 h-32 sm:w-36 sm:h-36 rounded-full object-cover border-4 border-[#071C1C] shadow-[0_0_35px_rgba(66,214,181,0.5)] bg-[#123131]"
                 />
                 <div
                   onClick={() => setIsEditing(true)}
@@ -199,69 +201,63 @@ export default function Profile() {
                 </div>
               </div>
 
-              {/* Identity & Bio */}
+              {/* Dynamic Info */}
               <div>
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
                   <h1 className="text-3xl sm:text-4xl font-black text-white uppercase tracking-tight">
-                    {profileData.name}
+                    {formData.name}
                   </h1>
-                  <span className="px-3 py-1 rounded-full bg-[#42D6B5]/20 text-[#72F0D0] text-xs font-black uppercase tracking-wider border border-[#42D6B5]/40">
-                    Pro Explorer ✨
+                  <span className="px-3.5 py-1 rounded-full bg-[#42D6B5]/20 text-[#72F0D0] text-xs font-black uppercase tracking-wider border border-[#42D6B5]/40 flex items-center gap-1.5 shadow">
+                    <ShieldCheck className="w-3.5 h-3.5 text-[#72F0D0]" />
+                    <span>Verified Explorer</span>
                   </span>
                 </div>
 
-                <p className="text-xs font-bold text-[#72F0D0] mt-1">
-                  {profileData.username} &bull;{" "}
+                <p className="text-xs font-bold text-[#72F0D0] mt-1.5 flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                  <span>{formData.email}</span>
+                  <span>&bull;</span>
+                  <span>{formData.username}</span>
+                  <span>&bull;</span>
                   <span className="text-zinc-400 font-medium inline-flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-[#42D6B5]" /> {profileData.location}
+                    <MapPin className="w-3 h-3 text-[#42D6B5]" /> {formData.location}
                   </span>
                 </p>
 
                 <p className="text-xs sm:text-sm text-zinc-300 font-medium max-w-2xl mt-3 leading-relaxed">
-                  &quot;{profileData.bio}&quot;
+                  &quot;{formData.bio}&quot;
                 </p>
               </div>
             </div>
 
-            {/* Quick Stat Counter Cards */}
+            {/* Dynamic Counter Metrics */}
             <div className="flex items-center gap-3 sm:gap-4 bg-[#123131] border border-[#5AD9BC]/20 p-4 rounded-2xl">
               <div className="text-center px-3">
                 <strong className="block text-2xl font-black text-[#72F0D0]">
-                  {completedTrips.length}
+                  {completedTripsCount}
                 </strong>
-                <span className="text-[10px] text-zinc-400 font-bold uppercase">Completed</span>
+                <span className="text-[10px] text-zinc-400 font-bold uppercase">My Trips</span>
               </div>
               <div className="w-px h-8 bg-white/10" />
               <div className="text-center px-3">
                 <strong className="block text-2xl font-black text-[#72F0D0]">
                   {likedPlaces.length}
                 </strong>
-                <span className="text-[10px] text-zinc-400 font-bold uppercase">Saved Places</span>
+                <span className="text-[10px] text-zinc-400 font-bold uppercase">Saved</span>
               </div>
               <div className="w-px h-8 bg-white/10" />
               <div className="text-center px-3">
-                <strong className="block text-2xl font-black text-[#72F0D0]">14.2k</strong>
-                <span className="text-[10px] text-zinc-400 font-bold uppercase">Miles</span>
+                <strong className="block text-2xl font-black text-[#72F0D0]">
+                  {milesTraveled.toLocaleString()}
+                </strong>
+                <span className="text-[10px] text-zinc-400 font-bold uppercase">Est. Miles</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* PROFILE TAB SWITCHER: Liked Places | Completed Trips | Badges */}
+        {/* TAB NAVIGATION */}
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4 mb-8">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setActiveTab("liked")}
-              className={`px-6 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
-                activeTab === "liked"
-                  ? "bg-gradient-to-r from-[#7AF0D2] via-[#4DE0C1] to-[#20C9B0] text-[#063D3A] shadow-[0_0_20px_rgba(32,201,176,0.4)] scale-105"
-                  : "bg-[#123131]/80 text-zinc-300 border border-[#5AD9BC]/20 hover:text-white"
-              }`}
-            >
-              <Heart className="w-4 h-4 fill-current" />
-              <span>Liked Places ({likedPlaces.length})</span>
-            </button>
-
             <button
               onClick={() => setActiveTab("completed")}
               className={`px-6 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
@@ -271,7 +267,19 @@ export default function Profile() {
               }`}
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>Completed Trips ({completedTrips.length})</span>
+              <span>My Trips ({completedTripsCount})</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("liked")}
+              className={`px-6 py-3 rounded-full text-xs font-black uppercase tracking-wider transition-all cursor-pointer flex items-center gap-2 ${
+                activeTab === "liked"
+                  ? "bg-gradient-to-r from-[#7AF0D2] via-[#4DE0C1] to-[#20C9B0] text-[#063D3A] shadow-[0_0_20px_rgba(32,201,176,0.4)] scale-105"
+                  : "bg-[#123131]/80 text-zinc-300 border border-[#5AD9BC]/20 hover:text-white"
+              }`}
+            >
+              <Heart className="w-4 h-4 fill-current" />
+              <span>Saved Places ({likedPlaces.length})</span>
             </button>
 
             <button
@@ -291,136 +299,145 @@ export default function Profile() {
             to="/explore"
             className="text-xs font-extrabold text-[#72F0D0] hover:underline flex items-center gap-1"
           >
-            <span>Explore More Destinations</span>
+            <span>Explore More</span>
             <ExternalLink className="w-3.5 h-3.5" />
           </Link>
         </div>
 
-        {/* TAB CONTENT 1: LIKED PLACES GRID */}
-        {activeTab === "liked" && (
-          <section className="animate-fade-in-up">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {likedPlaces.map((place) => (
-                <div
-                  key={place.id}
-                  className="group bg-[#0D2626] border border-[#5AD9BC]/20 hover:border-[#42D6B5]/60 rounded-3xl overflow-hidden shadow-xl hover:shadow-[0_0_30px_rgba(32,201,176,0.3)] transition-all duration-300 flex flex-col justify-between"
+        {/* TAB 1: DYNAMIC TRIPS */}
+        {activeTab === "completed" && (
+          <section className="space-y-6">
+            {loading ? (
+              <div className="text-center py-12 bg-[#0D2626] rounded-3xl border border-[#5AD9BC]/20">
+                <Loader2 className="w-6 h-6 text-[#72F0D0] animate-spin mx-auto mb-2" />
+                <p className="text-xs text-zinc-400 font-bold uppercase">Loading your trips...</p>
+              </div>
+            ) : userTrips.length === 0 ? (
+              <div className="text-center py-16 bg-[#0D2626] rounded-3xl border border-[#5AD9BC]/20 space-y-4">
+                <Plane className="w-12 h-12 text-[#72F0D0] mx-auto opacity-70" />
+                <h3 className="text-xl font-black uppercase text-white">No Trips Created Yet</h3>
+                <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+                  Start building your customized multi-city itinerary.
+                </p>
+                <button
+                  onClick={() => navigate("/plan-trip")}
+                  className="px-6 py-3 rounded-full bg-gradient-to-r from-[#7AF0D2] to-[#20C9B0] text-[#063D3A] font-extrabold text-xs uppercase shadow hover:scale-105 transition-all cursor-pointer"
                 >
-                  <div className="h-56 relative overflow-hidden">
+                  ✨ Plan a New Trip
+                </button>
+              </div>
+            ) : (
+              userTrips.map((trip) => (
+                <div
+                  key={trip.id || trip._id}
+                  className="group bg-[#0D2626] border border-[#5AD9BC]/25 rounded-3xl overflow-hidden shadow-2xl p-6 sm:p-8 flex flex-col lg:flex-row items-center justify-between gap-8 hover:border-[#42D6B5]/60 hover:shadow-[0_0_35px_rgba(32,201,176,0.3)] transition-all duration-300"
+                >
+                  <div className="w-full lg:w-72 h-48 rounded-2xl overflow-hidden relative shrink-0">
                     <img
-                      src={place.img}
-                      alt={place.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      src={trip.cover_image_url || trip.image || "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80"}
+                      alt={trip.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-[#0D2626] via-transparent to-transparent" />
-
-                    <div className="absolute top-4 left-4">
-                      <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-[#72F0D0] text-[10px] font-black uppercase tracking-widest">
-                        {place.tag}
-                      </span>
-                    </div>
-
-                    <div className="absolute top-4 right-4">
-                      <span className="px-3 py-1 rounded-full bg-red-500/80 backdrop-blur-md text-white text-xs font-bold shadow flex items-center gap-1">
-                        ❤️ Saved
-                      </span>
+                    <div className="absolute top-3 left-3 bg-[#42D6B5] text-[#063D3A] font-black text-[10px] uppercase px-3 py-1 rounded-full shadow">
+                      ✓ Saved Trip
                     </div>
                   </div>
 
-                  <div className="p-6 flex-1 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between text-xs mb-1">
-                        <span className="font-bold text-[#42D6B5]">{place.category}</span>
-                        <span className="font-bold text-zinc-300">{place.rating}</span>
-                      </div>
+                  <div className="flex-1 space-y-3 text-left">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-xs font-bold text-[#72F0D0]">
+                        📅 {trip.start_date || "Flexible"} &bull; {trip.end_date || "Flexible"}
+                      </span>
+                    </div>
 
-                      <h3 className="text-xl font-black text-white uppercase tracking-tight mb-1 group-hover:text-[#72F0D0] transition-colors">
-                        {place.title}
-                      </h3>
+                    <h3 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
+                      {trip.title || trip.name}
+                    </h3>
 
-                      <p className="text-xs text-zinc-400 font-medium leading-relaxed mb-4">
-                        {place.desc}
-                      </p>
+                    <p className="text-xs text-zinc-400 font-medium line-clamp-2">
+                      {trip.description || "Custom planned journey with itinerary & activities."}
+                    </p>
+                  </div>
+
+                  <div className="shrink-0 flex flex-col items-center lg:items-end gap-3 w-full lg:w-auto">
+                    <div className="text-center lg:text-right">
+                      <span className="text-[10px] text-zinc-400 font-bold uppercase block">
+                        Est. Budget
+                      </span>
+                      <strong className="text-xl font-black text-[#72F0D0]">
+                        ${trip.budget_cap || trip.budget || "0"}
+                      </strong>
                     </div>
 
                     <Link
-                      to="/plan-trip"
-                      className="w-full py-2.5 rounded-2xl bg-[#123131] hover:bg-[#20C9B0] text-white hover:text-[#063D3A] font-extrabold text-xs text-center border border-[#5AD9BC]/30 transition-all flex items-center justify-center gap-1.5"
+                      to={`/trips/${trip.id || trip._id}`}
+                      className="w-full lg:w-auto px-6 py-3 rounded-full bg-gradient-to-r from-[#7AF0D2] to-[#20C9B0] text-[#063D3A] font-extrabold text-xs uppercase tracking-wider shadow hover:scale-105 transition-all text-center"
                     >
-                      <span>✨ Plan Trip Here</span>
+                      View Details &rarr;
                     </Link>
                   </div>
                 </div>
-              ))}
-            </div>
+              ))
+            )}
           </section>
         )}
 
-        {/* TAB CONTENT 2: COMPLETED TRIPS GRID */}
-        {activeTab === "completed" && (
-          <section className="animate-fade-in-up space-y-6">
-            {completedTrips.map((trip) => (
-              <div
-                key={trip.id}
-                className="group bg-[#0D2626] border border-[#5AD9BC]/25 rounded-3xl overflow-hidden shadow-2xl p-6 sm:p-8 flex flex-col lg:flex-row items-center justify-between gap-8 hover:border-[#42D6B5]/60 hover:shadow-[0_0_35px_rgba(32,201,176,0.3)] transition-all duration-300"
-              >
-                <div className="w-full lg:w-72 h-48 rounded-2xl overflow-hidden relative shrink-0">
-                  <img
-                    src={trip.coverImg}
-                    alt={trip.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-3 left-3 bg-[#42D6B5] text-[#063D3A] font-black text-[10px] uppercase px-3 py-1 rounded-full shadow">
-                    ✓ Completed
-                  </div>
-                </div>
+        {/* TAB 2: SAVED PLACES */}
+        {activeTab === "liked" && (
+          <section>
+            {likedPlaces.length === 0 ? (
+              <div className="text-center py-12 bg-[#0D2626] rounded-3xl border border-[#5AD9BC]/20">
+                <Heart className="w-10 h-10 text-zinc-500 mx-auto mb-2" />
+                <p className="text-xs text-zinc-400 font-bold uppercase">No saved places yet.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {likedPlaces.map((place) => (
+                  <div
+                    key={place.id || place._id}
+                    className="group bg-[#0D2626] border border-[#5AD9BC]/20 hover:border-[#42D6B5]/60 rounded-3xl overflow-hidden shadow-xl hover:shadow-[0_0_30px_rgba(32,201,176,0.3)] transition-all duration-300 flex flex-col justify-between"
+                  >
+                    <div className="h-56 relative overflow-hidden">
+                      <img
+                        src={place.img || place.image_url}
+                        alt={place.title || place.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                      />
+                      <div className="absolute top-4 right-4">
+                        <span className="px-3 py-1 rounded-full bg-red-500/80 backdrop-blur-md text-white text-xs font-bold shadow">
+                          ❤️ Saved
+                        </span>
+                      </div>
+                    </div>
 
-                <div className="flex-1 space-y-3">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="text-xs font-bold text-[#72F0D0]">
-                      📅 {trip.dates} &bull; {trip.duration}
-                    </span>
-                    <div className="flex items-center gap-1 text-amber-400">
-                      {[...Array(trip.rating)].map((_, i) => (
-                        <Star key={i} className="w-4 h-4 fill-current" />
-                      ))}
+                    <div className="p-6 flex-1 flex flex-col justify-between text-left">
+                      <div>
+                        <h3 className="text-xl font-black text-white uppercase tracking-tight mb-1">
+                          {place.title || place.name}
+                        </h3>
+                        <p className="text-xs text-zinc-400 font-medium line-clamp-2 mb-4">
+                          {place.desc || place.description}
+                        </p>
+                      </div>
+
+                      <Link
+                        to="/plan-trip"
+                        className="w-full py-2.5 rounded-2xl bg-[#123131] hover:bg-[#20C9B0] text-white hover:text-[#063D3A] font-extrabold text-xs text-center border border-[#5AD9BC]/30 transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <span>✨ Add to Trip</span>
+                      </Link>
                     </div>
                   </div>
-
-                  <h3 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
-                    {trip.title}
-                  </h3>
-
-                  <p className="text-xs text-zinc-400 font-medium">📍 Stops: {trip.stops}</p>
-
-                  <p className="text-xs sm:text-sm text-zinc-300 italic bg-[#123131] p-3.5 rounded-xl border border-white/10">
-                    &quot;{trip.review}&quot;
-                  </p>
-                </div>
-
-                <div className="shrink-0 flex flex-col items-center lg:items-end gap-3 w-full lg:w-auto">
-                  <div className="text-center lg:text-right">
-                    <span className="text-[10px] text-zinc-400 font-bold uppercase block">
-                      Total Expensed
-                    </span>
-                    <strong className="text-xl font-black text-[#72F0D0]">{trip.totalSpent}</strong>
-                  </div>
-
-                  <Link
-                    to={`/trips/${trip.id}/details`}
-                    className="w-full lg:w-auto px-6 py-3 rounded-full bg-gradient-to-r from-[#7AF0D2] to-[#20C9B0] text-[#063D3A] font-extrabold text-xs uppercase tracking-wider shadow hover:scale-105 transition-all text-center"
-                  >
-                    View Memories ({trip.memoriesCount}) &rarr;
-                  </Link>
-                </div>
+                ))}
               </div>
-            ))}
+            )}
           </section>
         )}
 
-        {/* TAB CONTENT 3: ACHIEVEMENTS & BADGES */}
+        {/* TAB 3: ACHIEVEMENTS */}
         {activeTab === "badges" && (
-          <section className="animate-fade-in-up">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <section>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {badges.map((badge) => (
                 <div
                   key={badge.name}
@@ -464,8 +481,8 @@ export default function Profile() {
                 </label>
                 <input
                   type="text"
-                  value={profileData.name}
-                  onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full bg-[#123131] border border-[#5AD9BC]/30 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#72F0D0]"
                 />
               </div>
@@ -476,8 +493,8 @@ export default function Profile() {
                 </label>
                 <input
                   type="text"
-                  value={profileData.location}
-                  onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
+                  value={formData.location}
+                  onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   className="w-full bg-[#123131] border border-[#5AD9BC]/30 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#72F0D0]"
                 />
               </div>
@@ -488,8 +505,8 @@ export default function Profile() {
                 </label>
                 <input
                   type="text"
-                  value={profileData.avatar}
-                  onChange={(e) => setProfileData({ ...profileData, avatar: e.target.value })}
+                  value={formData.avatar}
+                  onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
                   className="w-full bg-[#123131] border border-[#5AD9BC]/30 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#72F0D0]"
                 />
               </div>
@@ -500,8 +517,8 @@ export default function Profile() {
                 </label>
                 <textarea
                   rows="3"
-                  value={profileData.bio}
-                  onChange={(e) => setProfileData({ ...profileData, bio: e.target.value })}
+                  value={formData.bio}
+                  onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                   className="w-full bg-[#123131] border border-[#5AD9BC]/30 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#72F0D0]"
                 />
               </div>
@@ -516,9 +533,11 @@ export default function Profile() {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#7AF0D2] to-[#20C9B0] text-[#063D3A] font-black text-xs uppercase tracking-wider shadow"
+                  disabled={isSaving}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#7AF0D2] to-[#20C9B0] text-[#063D3A] font-black text-xs uppercase tracking-wider shadow disabled:opacity-50 flex items-center gap-2"
                 >
-                  Save Profile
+                  {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{isSaving ? "Saving..." : "Save Profile"}</span>
                 </button>
               </div>
             </form>

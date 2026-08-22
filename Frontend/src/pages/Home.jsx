@@ -703,10 +703,6 @@ export default function HomePage({ onNavigateToAuth }) {
         </button>
       </div>
 
-      {/* FOOTER */}
-      <footer className="relative z-10 border-t border-white/10 bg-slate-950/80 backdrop-blur-md py-8 px-8 text-center text-xs text-white/60 select-none">
-        &copy; {new Date().getFullYear()} Ghummy Ghummi&trade;. All Rights Reserved.
-      </footer>
     </div>
   );
 }

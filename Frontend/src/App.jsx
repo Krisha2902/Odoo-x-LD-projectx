@@ -1,7 +1,7 @@
 import React from "react";
-import { Routes, Route, useNavigate } from "react-router-dom";
+import { Routes, Route, useNavigate, Navigate, useLocation } from "react-router-dom";
 import { ToastProvider } from "./context/ToastContext";
-import { AuthProvider } from "./context/AuthContext";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 
 // Global Layout Components
 import Navbar from "./components/Navbar/Navbar";
@@ -25,6 +25,18 @@ import ExplorePage from "./pages/Explore.jsx";
 import CalendarPage from "./pages/Calendar/Calendar.jsx";
 import ProfilePage from "./pages/Profile/Profile.jsx";
 
+// Protected Route Wrapper for Authenticated Pages
+function ProtectedRoute({ children }) {
+  const { token } = useAuth();
+  const location = useLocation();
+
+  if (!token) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  return children;
+}
+
 function HomeWrapper() {
   const navigate = useNavigate();
   return <HomePage onNavigateToAuth={() => navigate("/login")} />;
@@ -32,7 +44,7 @@ function HomeWrapper() {
 
 function LoginWrapper() {
   const navigate = useNavigate();
-  return <LoginPage onNavigateToHome={() => navigate("/home")} />;
+  return <LoginPage onNavigateToHome={() => navigate("/")} />;
 }
 
 export default function App() {
@@ -41,23 +53,31 @@ export default function App() {
       <AuthProvider>
         <div className="min-h-screen bg-[#071517] text-white font-sans">
           <Routes>
-            {/* Initial Site Entry: Login & Signup Pages */}
-            <Route path="/" element={<LoginWrapper />} />
+            {/* Auth Routes */}
             <Route path="/login" element={<LoginWrapper />} />
             <Route path="/signup" element={<LoginWrapper />} />
 
-            {/* Home Page */}
+            {/* Public Landing & Explore Pages (With Navbar & Footer) */}
+            <Route
+              path="/"
+              element={
+                <>
+                  <Navbar />
+                  <HomeWrapper />
+                  <Footer />
+                </>
+              }
+            />
             <Route
               path="/home"
               element={
                 <>
                   <Navbar />
                   <HomeWrapper />
+                  <Footer />
                 </>
               }
             />
-
-            {/* Explore Page */}
             <Route
               path="/explore"
               element={
@@ -68,141 +88,6 @@ export default function App() {
                 </>
               }
             />
-
-            {/* My Trips */}
-            <Route
-              path="/my-trips"
-              element={
-                <>
-                  <Navbar />
-                  <MyTripsPage />
-                  <Footer />
-                </>
-              }
-            />
-            <Route
-              path="/trips"
-              element={
-                <>
-                  <Navbar />
-                  <DashboardPage />
-                  <Footer />
-                </>
-              }
-            />
-
-            {/* Ongoing Trips */}
-            <Route
-              path="/ongoing-trips"
-              element={
-                <>
-                  <Navbar />
-                  <OngoingTripsPage />
-                  <Footer />
-                </>
-              }
-            />
-            <Route
-              path="/trips/:id/ongoing"
-              element={
-                <>
-                  <Navbar />
-                  <OngoingTripPage />
-                  <Footer />
-                </>
-              }
-            />
-
-            {/* Trip Details */}
-            <Route
-              path="/trips/:id"
-              element={
-                <>
-                  <Navbar />
-                  <TripDetailsPage />
-                  <Footer />
-                </>
-              }
-            />
-            <Route
-              path="/trips/:id/details"
-              element={
-                <>
-                  <Navbar />
-                  <TripDetailsPage />
-                  <Footer />
-                </>
-              }
-            />
-
-            {/* Plan Trip */}
-            <Route
-              path="/plan-trip"
-              element={
-                <>
-                  <Navbar />
-                  <PlanTripPage />
-                  <Footer />
-                </>
-              }
-            />
-
-            {/* Calendar */}
-            <Route
-              path="/calendar"
-              element={
-                <>
-                  <Navbar />
-                  <CalendarPage />
-                  <Footer />
-                </>
-              }
-            />
-
-            {/* Profile */}
-            <Route
-              path="/profile"
-              element={
-                <>
-                  <Navbar />
-                  <ProfilePage />
-                  <Footer />
-                </>
-              }
-            />
-
-            {/* Trip Builder, Timeline, Map, Conductor & Share */}
-            <Route
-              path="/trips/:id/build"
-              element={
-                <>
-                  <Navbar />
-                  <TripBuilderPage />
-                </>
-              }
-            />
-            <Route
-              path="/trips/:id/timeline"
-              element={
-                <>
-                  <Navbar />
-                  <TimelineViewPage />
-                  <Footer />
-                </>
-              }
-            />
-            <Route
-              path="/trips/:id/map"
-              element={
-                <>
-                  <Navbar />
-                  <MapViewPage />
-                  <Footer />
-                </>
-              }
-            />
-            <Route path="/trips/:id/conduct" element={<ConductorViewPage />} />
-            <Route path="/trips/:id/view" element={<ConductorViewPage />} />
             <Route
               path="/share/:slug"
               element={
@@ -214,7 +99,154 @@ export default function App() {
               }
             />
 
-            <Route path="*" element={<LoginWrapper />} />
+            {/* PROTECTED ROUTES (Require Login) */}
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Navbar />
+                  <ProfilePage />
+                  <Footer />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/my-trips"
+              element={
+                <ProtectedRoute>
+                  <Navbar />
+                  <MyTripsPage />
+                  <Footer />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/trips"
+              element={
+                <ProtectedRoute>
+                  <Navbar />
+                  <DashboardPage />
+                  <Footer />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/ongoing-trips"
+              element={
+                <ProtectedRoute>
+                  <Navbar />
+                  <OngoingTripsPage />
+                  <Footer />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/trips/:id/ongoing"
+              element={
+                <ProtectedRoute>
+                  <Navbar />
+                  <OngoingTripPage />
+                  <Footer />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/trips/:id"
+              element={
+                <ProtectedRoute>
+                  <Navbar />
+                  <TripDetailsPage />
+                  <Footer />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/trips/:id/details"
+              element={
+                <ProtectedRoute>
+                  <Navbar />
+                  <TripDetailsPage />
+                  <Footer />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/plan-trip"
+              element={
+                <ProtectedRoute>
+                  <Navbar />
+                  <PlanTripPage />
+                  <Footer />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/calendar"
+              element={
+                <ProtectedRoute>
+                  <Navbar />
+                  <CalendarPage />
+                  <Footer />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/trips/:id/build"
+              element={
+                <ProtectedRoute>
+                  <Navbar />
+                  <TripBuilderPage />
+                  <Footer />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/trips/:id/timeline"
+              element={
+                <ProtectedRoute>
+                  <Navbar />
+                  <TimelineViewPage />
+                  <Footer />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/trips/:id/map"
+              element={
+                <ProtectedRoute>
+                  <Navbar />
+                  <MapViewPage />
+                  <Footer />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/trips/:id/conduct"
+              element={
+                <ProtectedRoute>
+                  <ConductorViewPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/trips/:id/view"
+              element={
+                <ProtectedRoute>
+                  <ConductorViewPage />
+                </ProtectedRoute>
+              }
+            />
+
+            <Route
+              path="*"
+              element={
+                <>
+                  <Navbar />
+                  <HomeWrapper />
+                  <Footer />
+                </>
+              }
+            />
           </Routes>
         </div>
       </AuthProvider>
