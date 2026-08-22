@@ -46,6 +46,7 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const location = useLocation();
+  const isHomePage = location.pathname === "/";
 
   /* =====================================================
      SCROLL DETECTION
@@ -88,18 +89,37 @@ export default function Navbar() {
   }, [mobileOpen]);
 
   /* =====================================================
-     HOMEPAGE NAVBAR BEHAVIOUR
+     NAVBAR BACKGROUND
+
+     HOME PAGE:
+     Transparent at top so hero image stays visible.
+
+     AFTER SCROLL:
+     Glass background appears.
+
+     OTHER PAGES:
+     Theme-aware glass background.
   ===================================================== */
 
-  const isHomePage = location.pathname === "/";
+  const headerBackground =
+    isHomePage && !scrolled
+      ? "border-transparent bg-transparent shadow-none"
+      : `
+        border-b
+        border-[#A7EBD9]/60
+        bg-[#F4FFFC]/88
+        shadow-[0_8px_35px_rgba(0,137,123,0.10)]
+        dark:border-[#4ACFB2]/20
+        dark:bg-[#071C1C]/90
+        dark:shadow-[0_8px_35px_rgba(0,0,0,0.30)]
+      `;
 
   return (
     <header
       className={cn(
         "fixed top-0 left-0 right-0 z-50 w-full transition-all duration-500",
-        isHomePage && !scrolled
-          ? "border-transparent bg-transparent"
-          : "border-b border-white/10 bg-[#071517]/75 shadow-[0_8px_35px_rgba(0,0,0,0.18)] backdrop-blur-xl"
+        "backdrop-blur-xl",
+        headerBackground
       )}
     >
       <nav
@@ -124,8 +144,6 @@ export default function Navbar() {
           className="group flex shrink-0 items-center gap-3"
           aria-label="Ghummy Ghummi home"
         >
-          {/* TEMPORARY LOGO */}
-
           <span
             className="
               flex
@@ -135,18 +153,18 @@ export default function Navbar() {
               justify-center
               rounded-2xl
               bg-gradient-to-br
-              from-cyan-300
-              via-teal-400
-              to-sky-400
-              shadow-[0_0_25px_rgba(45,212,191,0.28)]
+              from-[#8AF5D7]
+              via-[#55E4C1]
+              to-[#22C7B0]
+              shadow-[0_0_25px_rgba(48,220,184,0.25)]
               transition-all
               duration-300
               group-hover:scale-105
-              group-hover:shadow-[0_0_35px_rgba(45,212,191,0.4)]
+              group-hover:shadow-[0_0_35px_rgba(48,220,184,0.38)]
             "
           >
             <Compass
-              className="h-6 w-6 text-[#062024]"
+              className="h-6 w-6 text-[#063D3A]"
               strokeWidth={2.3}
             />
           </span>
@@ -154,14 +172,17 @@ export default function Navbar() {
           <span
             className="
               bg-gradient-to-r
-              from-cyan-200
-              via-teal-300
-              to-sky-300
+              from-[#008F82]
+              via-[#00A896]
+              to-[#10B7A2]
               bg-clip-text
               text-[22px]
               font-semibold
               tracking-tight
               text-transparent
+              dark:from-[#72F0D0]
+              dark:via-[#5BE4C4]
+              dark:to-[#8AF5D7]
             "
           >
             Ghummy Ghummi
@@ -184,29 +205,38 @@ export default function Navbar() {
                   className={({ isActive }) =>
                     cn(
                       `
-                      group
-                      relative
-                      flex
-                      items-center
-                      gap-2
-                      rounded-full
-                      px-4
-                      py-2.5
-                      text-[15px]
-                      font-medium
-                      transition-all
-                      duration-300
+                        group
+                        relative
+                        flex
+                        items-center
+                        gap-2
+                        rounded-full
+                        px-4
+                        py-2.5
+                        text-[15px]
+                        font-medium
+                        transition-all
+                        duration-300
                       `,
                       isActive
                         ? `
-                          bg-white/[0.07]
-                          text-cyan-200
-                          `
+                          bg-[#BDF6E6]/75
+                          text-[#007C70]
+                          shadow-[0_4px_16px_rgba(0,168,150,0.10)]
+
+                          dark:bg-[#42D6B5]/15
+                          dark:!text-[#D9FFF6]
+                          dark:shadow-[0_4px_16px_rgba(66,214,181,0.10)]
+                        `
                         : `
-                          text-white/60
-                          hover:bg-white/[0.05]
-                          hover:text-white
-                          `
+                          text-[#365F5C]
+                          hover:bg-[#DDFBF2]/80
+                          hover:text-[#007C70]
+
+                          dark:!text-[#D9FFF6]
+                          dark:hover:bg-[#42D6B5]/12
+                          dark:hover:!text-[#FFFFFF]
+                        `
                     )
                   }
                 >
@@ -215,19 +245,26 @@ export default function Navbar() {
                       <Icon
                         className={cn(
                           "h-[17px] w-[17px] transition-all duration-300",
+
                           isActive
-                            ? "text-cyan-300"
-                            : "text-white/50 group-hover:text-cyan-300"
+                            ? `
+                              text-[#009F8F]
+                              dark:!text-[#8AF5D7]
+                            `
+                            : `
+                              text-[#4C807A]
+                              group-hover:text-[#00A896]
+
+                              dark:!text-[#8AD8C8]
+                              dark:group-hover:!text-[#A8FFE9]
+                            `
                         )}
                         strokeWidth={1.8}
                       />
 
                       <span>{link.label}</span>
 
-                      {/* =================================================
-                          ACTIVE PAGE INDICATOR
-                          DOT CHANGED TO SHORT LINE
-                      ================================================= */}
+                      {/* ACTIVE PAGE INDICATOR */}
 
                       {isActive && (
                         <span
@@ -239,8 +276,10 @@ export default function Navbar() {
                             w-8
                             -translate-x-1/2
                             rounded-full
-                            bg-cyan-300
-                            shadow-[0_0_8px_rgba(103,232,249,0.5)]
+                            bg-[#23CDB0]
+                            shadow-[0_0_9px_rgba(35,205,176,0.55)]
+                            dark:bg-[#72F0D0]
+                            dark:shadow-[0_0_10px_rgba(114,240,208,0.70)]
                           "
                         />
                       )}
@@ -257,6 +296,7 @@ export default function Navbar() {
         ================================================= */}
 
         <div className="hidden items-center gap-4 lg:flex">
+
           {/* PROFILE */}
 
           <Link
@@ -270,16 +310,25 @@ export default function Navbar() {
               justify-center
               rounded-full
               border
-              border-white/10
-              bg-white/[0.03]
-              text-white/70
+              border-[#A7EBD9]/70
+              bg-white/45
+              text-[#376B66]
               backdrop-blur-md
               transition-all
               duration-300
-              hover:border-cyan-300/30
-              hover:bg-cyan-300/10
-              hover:text-cyan-200
-              hover:shadow-[0_0_20px_rgba(45,212,191,0.12)]
+
+              hover:border-[#63DEC2]
+              hover:bg-[#DDFBF2]/75
+              hover:text-[#008F82]
+              hover:shadow-[0_0_20px_rgba(0,168,150,0.14)]
+
+              dark:border-[#5AD9BC]/25
+              dark:bg-[#123131]/55
+              dark:!text-[#C9F5EB]
+              dark:hover:border-[#5AD9BC]/50
+              dark:hover:bg-[#42D6B5]/12
+              dark:hover:!text-[#8AF5D7]
+              dark:hover:shadow-[0_0_20px_rgba(66,214,181,0.15)]
             "
           >
             <UserRound
@@ -302,28 +351,22 @@ export default function Navbar() {
               gap-2
               rounded-full
               bg-gradient-to-r
-              from-cyan-300
-              to-sky-400
+              from-[#7AF0D2]
+              via-[#4DE0C1]
+              to-[#20C9B0]
               px-6
               text-[15px]
               font-bold
-              shadow-[0_4px_18px_rgba(34,211,238,0.12)]
+              text-[#063D3A]
+              shadow-[0_4px_18px_rgba(0,168,150,0.18)]
               transition-all
               duration-300
+
               hover:-translate-y-[1px]
-              hover:shadow-[0_6px_22px_rgba(34,211,238,0.18)]
+              hover:shadow-[0_6px_24px_rgba(0,168,150,0.28)]
             "
-            style={{
-              color: "#062024",
-            }}
           >
-            <span
-              style={{
-                color: "#062024",
-              }}
-            >
-              Plan a Trip
-            </span>
+            <span>Plan a Trip</span>
 
             <ArrowUpRight
               className="
@@ -335,9 +378,6 @@ export default function Navbar() {
                 group-hover:-translate-y-0.5
               "
               strokeWidth={2.2}
-              style={{
-                color: "#062024",
-              }}
             />
           </Link>
         </div>
@@ -357,14 +397,23 @@ export default function Navbar() {
             justify-center
             rounded-xl
             border
-            border-white/10
-            bg-white/[0.04]
-            text-white/80
+            border-[#A7EBD9]/70
+            bg-white/45
+            text-[#376B66]
             transition-all
             duration-300
-            hover:border-cyan-300/30
-            hover:bg-cyan-300/10
-            hover:text-cyan-200
+
+            hover:border-[#63DEC2]
+            hover:bg-[#DDFBF2]/75
+            hover:text-[#008F82]
+
+            dark:border-[#5AD9BC]/25
+            dark:bg-[#123131]/55
+            dark:!text-[#C9F5EB]
+            dark:hover:border-[#5AD9BC]/50
+            dark:hover:bg-[#42D6B5]/12
+            dark:hover:!text-[#8AF5D7]
+
             lg:hidden
           "
           aria-label={
@@ -393,8 +442,9 @@ export default function Navbar() {
             inset-0
             top-[72px]
             z-40
-            bg-black/40
+            bg-[#073D3A]/15
             backdrop-blur-sm
+            dark:bg-black/45
             lg:hidden
           "
           onClick={() => setMobileOpen(false)}
@@ -408,22 +458,30 @@ export default function Navbar() {
       <div
         className={cn(
           `
-          fixed
-          right-0
-          top-[72px]
-          z-50
-          h-[calc(100vh-72px)]
-          w-full
-          max-w-sm
-          border-l
-          border-white/10
-          bg-[#071517]/95
-          shadow-2xl
-          backdrop-blur-2xl
-          transition-transform
-          duration-400
-          ease-out
-          lg:hidden
+            fixed
+            right-0
+            top-[72px]
+            z-50
+            h-[calc(100vh-72px)]
+            w-full
+            max-w-sm
+
+            border-l
+            border-[#A7EBD9]/70
+
+            bg-[#F4FFFC]/96
+
+            shadow-2xl
+            backdrop-blur-2xl
+
+            transition-transform
+            duration-400
+            ease-out
+
+            dark:border-[#5AD9BC]/20
+            dark:bg-[#071C1C]/96
+
+            lg:hidden
           `,
           mobileOpen
             ? "translate-x-0"
@@ -431,14 +489,38 @@ export default function Navbar() {
         )}
       >
         <div className="flex flex-col p-6">
+
           {/* MOBILE BRAND */}
 
-          <div className="mb-6 border-b border-white/10 pb-6">
-            <span className="text-sm text-white/40">
+          <div
+            className="
+              mb-6
+              border-b
+              border-[#A7EBD9]/60
+              pb-6
+
+              dark:border-[#5AD9BC]/20
+            "
+          >
+            <span
+              className="
+                text-sm
+                text-[#5B817C]
+                dark:!text-[#A8D9CE]
+              "
+            >
               Explore the world
             </span>
 
-            <h2 className="mt-1 text-xl font-semibold text-white">
+            <h2
+              className="
+                mt-1
+                text-xl
+                font-semibold
+                text-[#073D3A]
+                dark:!text-[#E6FFF9]
+              "
+            >
               Ghummy Ghummi
             </h2>
           </div>
@@ -457,24 +539,44 @@ export default function Navbar() {
                     className={({ isActive }) =>
                       cn(
                         `
-                        flex
-                        items-center
-                        gap-3
-                        rounded-2xl
-                        px-4
-                        py-3.5
-                        text-[15px]
-                        font-medium
-                        transition-all
-                        duration-300
+                          flex
+                          items-center
+                          gap-3
+                          rounded-2xl
+                          px-4
+                          py-3.5
+                          text-[15px]
+                          font-medium
+                          transition-all
+                          duration-300
                         `,
                         isActive
-                          ? "bg-cyan-300/10 text-cyan-200"
-                          : "text-white/60 hover:bg-white/[0.05] hover:text-white"
+                          ? `
+                            bg-[#BDF6E6]/75
+                            text-[#007C70]
+
+                            dark:bg-[#42D6B5]/15
+                            dark:!text-[#D9FFF6]
+                          `
+                          : `
+                            text-[#365F5C]
+                            hover:bg-[#DDFBF2]/80
+                            hover:text-[#007C70]
+
+                            dark:!text-[#D9FFF6]
+                            dark:hover:bg-[#42D6B5]/12
+                            dark:hover:!text-white
+                          `
                       )
                     }
                   >
-                    <Icon className="h-5 w-5" />
+                    <Icon
+                      className="
+                        h-5
+                        w-5
+                        dark:!text-[#8AF5D7]
+                      "
+                    />
 
                     {link.label}
                   </NavLink>
@@ -495,33 +597,28 @@ export default function Navbar() {
               justify-center
               gap-2
               rounded-full
+
               bg-gradient-to-r
-              from-cyan-300
-              to-sky-400
+              from-[#7AF0D2]
+              via-[#4DE0C1]
+              to-[#20C9B0]
+
               font-bold
-              shadow-[0_4px_18px_rgba(34,211,238,0.1)]
+              text-[#063D3A]
+
+              shadow-[0_4px_18px_rgba(0,168,150,0.18)]
+
               transition-all
               duration-300
-              hover:shadow-[0_6px_22px_rgba(34,211,238,0.16)]
+
+              hover:shadow-[0_6px_22px_rgba(0,168,150,0.25)]
             "
-            style={{
-              color: "#062024",
-            }}
           >
-            <span
-              style={{
-                color: "#062024",
-              }}
-            >
-              Plan a Trip
-            </span>
+            <span>Plan a Trip</span>
 
             <ArrowUpRight
               className="h-4 w-4"
               strokeWidth={2.2}
-              style={{
-                color: "#062024",
-              }}
             />
           </Link>
 
@@ -535,24 +632,50 @@ export default function Navbar() {
               items-center
               gap-3
               rounded-2xl
+
               border
-              border-white/10
+              border-[#A7EBD9]/70
+
+              bg-white/40
+
               px-4
               py-3.5
-              text-white/60
+
+              text-[#376B66]
+
               transition-all
-              hover:bg-white/[0.05]
-              hover:text-white
+
+              hover:bg-[#DDFBF2]/75
+              hover:text-[#008F82]
+
+              dark:border-[#5AD9BC]/25
+              dark:bg-[#123131]/55
+              dark:!text-[#C9F5EB]
+              dark:hover:bg-[#42D6B5]/12
+              dark:hover:!text-[#8AF5D7]
             "
           >
             <UserRound className="h-5 w-5" />
 
             <div>
-              <p className="text-sm font-medium text-white">
+              <p
+                className="
+                  text-sm
+                  font-medium
+                  text-[#073D3A]
+                  dark:!text-[#E6FFF9]
+                "
+              >
                 Your Profile
               </p>
 
-              <p className="text-xs text-white/40">
+              <p
+                className="
+                  text-xs
+                  text-[#5B817C]
+                  dark:!text-[#A8D9CE]
+                "
+              >
                 Manage your account
               </p>
             </div>

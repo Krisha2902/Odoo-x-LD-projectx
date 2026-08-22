@@ -1,5 +1,6 @@
-<<<<<<< HEAD
 import { Routes, Route } from "react-router-dom";
+
+import LoginPage from "./pages/login.jsx";
 
 import Navbar from "./components/Navbar/Navbar";
 
@@ -14,53 +15,119 @@ import PlanTrip from "./pages/PlanTrip/PlanTrip";
 function App() {
   return (
     <div className="min-h-screen bg-[#071517]">
-      <Navbar />
-
       <Routes>
-        <Route path="/" element={<Home />} />
+
+        {/* =================================================
+            LOGIN
+            No navbar on login page
+        ================================================= */}
+
+        <Route
+          path="/login"
+          element={<LoginPage />}
+        />
+
+        {/* =================================================
+            HOME
+        ================================================= */}
+
+        <Route
+          path="/"
+          element={
+            <>
+              <Navbar />
+              <Home />
+            </>
+          }
+        />
+
+        {/* =================================================
+            EXPLORE
+        ================================================= */}
 
         <Route
           path="/explore"
-          element={<Explore />}
+          element={
+            <>
+              <Navbar />
+              <Explore />
+            </>
+          }
         />
+
+        {/* =================================================
+            MY TRIPS
+        ================================================= */}
 
         <Route
           path="/my-trips"
-          element={<MyTrips />}
+          element={
+            <>
+              <Navbar />
+              <MyTrips />
+            </>
+          }
         />
+
+        {/* =================================================
+            ONGOING TRIPS
+        ================================================= */}
 
         <Route
           path="/ongoing-trips"
-          element={<OngoingTrips />}
+          element={
+            <>
+              <Navbar />
+              <OngoingTrips />
+            </>
+          }
         />
+
+        {/* =================================================
+            CALENDAR
+        ================================================= */}
 
         <Route
           path="/calendar"
-          element={<Calendar />}
+          element={
+            <>
+              <Navbar />
+              <Calendar />
+            </>
+          }
         />
+
+        {/* =================================================
+            PROFILE
+        ================================================= */}
 
         <Route
           path="/profile"
-          element={<Profile />}
+          element={
+            <>
+              <Navbar />
+              <Profile />
+            </>
+          }
         />
+
+        {/* =================================================
+            PLAN TRIP
+        ================================================= */}
 
         <Route
           path="/plan-trip"
-          element={<PlanTrip />}
+          element={
+            <>
+              <Navbar />
+              <PlanTrip />
+            </>
+          }
         />
+
       </Routes>
     </div>
   );
 }
 
 export default App;
-=======
-import LoginPage from './pages/login.jsx'
-
-function App() {
-  return <LoginPage />
-}
-
-export default App
-
->>>>>>> 62efed93cb2573795e30394ce9db94fcc68c170d
