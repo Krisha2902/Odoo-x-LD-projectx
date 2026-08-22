@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import bgLogin from "../assets/bg-login.jpg";
 import PlaneCursor from "../components/PlaneCursor";
+import { apiClient, setToken } from "../api/client";
 
-export default function LoginPage() {
+export default function LoginPage({ onAuthSuccess }) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
 
 
   // Sign Up Form State
@@ -16,6 +18,24 @@ export default function LoginPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(true);
+
+  // OTP Verification State
+  const [signUpStep, setSignUpStep] = useState('DETAILS'); // 'DETAILS' | 'OTP_VERIFY'
+  const [otpCode, setOtpCode] = useState('');
+  const [otpTimer, setOtpTimer] = useState(60);
+  const [canResendOtp, setCanResendOtp] = useState(false);
+  const [devOtpBadge, setDevOtpBadge] = useState('');
+
+  // OTP Countdown Timer
+  React.useEffect(() => {
+    let interval = null;
+    if (signUpStep === 'OTP_VERIFY' && otpTimer > 0) {
+      interval = setInterval(() => setOtpTimer((t) => t - 1), 1000);
+    } else if (otpTimer === 0) {
+      setCanResendOtp(true);
+    }
+    return () => clearInterval(interval);
+  }, [signUpStep, otpTimer]);
 
   // Password Strength Calculator
   const getPasswordStrength = (pass) => {
@@ -39,6 +59,38 @@ export default function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [authError, setAuthError] = useState("");
 
+  const handleGoogleSuccess = async (profile) => {
+    setGoogleUser(profile);
+    setAuthError("");
+    setLoading(true);
+    try {
+      let data;
+      const googlePassword = `google_oauth_${profile.sub || profile.id || profile.email}`;
+      try {
+        data = await apiClient.post('/auth/login', {
+          email: profile.email,
+          password: googlePassword,
+        });
+      } catch (err) {
+        data = await apiClient.post('/auth/signup', {
+          name: profile.name || profile.email.split('@')[0],
+          email: profile.email,
+          password: googlePassword,
+        });
+      }
+      if (data?.token) setToken(data.token);
+      if (onAuthSuccess) {
+        onAuthSuccess(data.user, data.token);
+      }
+    } catch (err) {
+      console.error("Google session auto-login error:", err);
+      // Even if backend signup fails, keep profile set
+    } finally {
+      setLoading(false);
+      setGoogleLoading(false);
+    }
+  };
+
   // Initialize Google Identity SDK on mount
   React.useEffect(() => {
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -59,8 +111,7 @@ export default function LoginPage() {
                     .join('')
                 );
                 const profile = JSON.parse(jsonPayload);
-                setGoogleUser(profile);
-                setAuthError("");
+                handleGoogleSuccess(profile);
               } catch (e) {
                 console.error("JWT Decode error:", e);
               }
@@ -108,12 +159,10 @@ export default function LoginPage() {
                 headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
               });
               const profile = await res.json();
-              setGoogleUser(profile);
-              setAuthError("");
+              await handleGoogleSuccess(profile);
             } catch (err) {
               console.error("Error fetching Google profile:", err);
               setAuthError("Failed to fetch user profile from Google.");
-            } finally {
               setGoogleLoading(false);
             }
           },
@@ -148,14 +197,71 @@ export default function LoginPage() {
 
 
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    // Handle authentication logic here
+    setAuthError("");
+    setLoading(true);
+    try {
+      const data = await apiClient.post('/auth/login', { email, password });
+      if (data.token) setToken(data.token);
+      if (onAuthSuccess) {
+        onAuthSuccess(data.user, data.token);
+      }
+    } catch (err) {
+      setAuthError(err.message || "Login failed. Please check your credentials.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSignUpSubmit = (e) => {
+  const handleSendOtp = async (e) => {
+    if (e) e.preventDefault();
+    if (signUpPassword !== confirmPassword) {
+      setAuthError("Passwords do not match!");
+      return;
+    }
+    setAuthError("");
+    setLoading(true);
+    try {
+      const data = await apiClient.post('/auth/send-otp', { email: signUpEmail });
+      setSignUpStep('OTP_VERIFY');
+      setOtpTimer(60);
+      setCanResendOtp(false);
+      if (data.devOtp) {
+        setDevOtpBadge(data.devOtp);
+        setOtpCode(data.devOtp);
+      }
+    } catch (err) {
+      setAuthError(err.message || "Failed to send OTP code.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtpAndSignUp = async (e) => {
     e.preventDefault();
-    // Handle signup logic here
+    if (!otpCode || otpCode.length !== 6) {
+      setAuthError("Please enter a 6-digit OTP code.");
+      return;
+    }
+    setAuthError("");
+    setLoading(true);
+    try {
+      const data = await apiClient.post('/auth/verify-otp-and-signup', {
+        name: fullName,
+        email: signUpEmail,
+        password: signUpPassword,
+        otp: otpCode,
+      });
+      if (data.token) setToken(data.token);
+      if (onAuthSuccess) {
+        onAuthSuccess(data.user, data.token);
+      }
+    } catch (err) {
+      setAuthError(err.message || "OTP verification failed.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -351,9 +457,20 @@ export default function LoginPage() {
               {/* Action Button */}
               <button
                 type="submit"
-                className="w-full py-2.5 bg-[#0096B4] hover:bg-[#00819C] active:scale-[0.98] text-white font-bold text-xs uppercase tracking-wider rounded-lg shadow-md hover:shadow-lg hover:shadow-cyan-500/25 transition-all cursor-pointer"
+                disabled={loading}
+                className="w-full py-2.5 bg-[#0096B4] hover:bg-[#00819C] active:scale-[0.98] text-white font-bold text-xs uppercase tracking-wider rounded-lg shadow-md hover:shadow-lg hover:shadow-cyan-500/25 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                Log In
+                {loading ? (
+                  <>
+                    <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Logging in...
+                  </>
+                ) : (
+                  "Log In"
+                )}
               </button>
             </form>
 
@@ -424,141 +541,228 @@ export default function LoginPage() {
               <div className="border-t border-zinc-300 w-full" />
             </div>
 
-            {/* Creative Sign Up Form */}
-            <form onSubmit={handleSignUpSubmit} className="space-y-2">
-              {/* Full Name Input with User Icon */}
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-zinc-400">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </span>
-                <input
-                  type="text"
-                  required
-                  placeholder="Full Name"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  className="w-full pl-9 pr-3.5 py-2 bg-white/90 border border-zinc-200 rounded-lg text-xs text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#0096B4]/40 focus:border-[#0096B4] transition-all shadow-sm"
-                />
-              </div>
+            {/* Creative 2-Step Sign Up Form */}
+            {signUpStep === 'DETAILS' ? (
+              <form onSubmit={handleSendOtp} className="space-y-2">
+                {/* Full Name Input with User Icon */}
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-zinc-400">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </span>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Full Name"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="w-full pl-9 pr-3.5 py-2 bg-white/90 border border-zinc-200 rounded-lg text-xs text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#0096B4]/40 focus:border-[#0096B4] transition-all shadow-sm"
+                  />
+                </div>
 
-              {/* Email Input with Mail Icon */}
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-zinc-400">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </span>
-                <input
-                  type="email"
-                  required
-                  placeholder="Email Address"
-                  value={signUpEmail}
-                  onChange={(e) => setSignUpEmail(e.target.value)}
-                  className="w-full pl-9 pr-3.5 py-2 bg-white/90 border border-zinc-200 rounded-lg text-xs text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#0096B4]/40 focus:border-[#0096B4] transition-all shadow-sm"
-                />
-              </div>
+                {/* Email Input with Mail Icon */}
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-zinc-400">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </span>
+                  <input
+                    type="email"
+                    required
+                    placeholder="Email Address"
+                    value={signUpEmail}
+                    onChange={(e) => setSignUpEmail(e.target.value)}
+                    className="w-full pl-9 pr-3.5 py-2 bg-white/90 border border-zinc-200 rounded-lg text-xs text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#0096B4]/40 focus:border-[#0096B4] transition-all shadow-sm"
+                  />
+                </div>
 
-              {/* Password Input with Lock Icon & Show/Hide Eye Toggle */}
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-zinc-400">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </span>
-                <input
-                  type={showSignUpPassword ? "text" : "password"}
-                  required
-                  placeholder="Password"
-                  value={signUpPassword}
-                  onChange={(e) => setSignUpPassword(e.target.value)}
-                  className="w-full pl-9 pr-9 py-2 bg-white/90 border border-zinc-200 rounded-lg text-xs text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#0096B4]/40 focus:border-[#0096B4] transition-all shadow-sm"
-                />
+                {/* Password Input with Lock Icon & Show/Hide Eye Toggle */}
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-zinc-400">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  </span>
+                  <input
+                    type={showSignUpPassword ? "text" : "password"}
+                    required
+                    placeholder="Password"
+                    value={signUpPassword}
+                    onChange={(e) => setSignUpPassword(e.target.value)}
+                    className="w-full pl-9 pr-9 py-2 bg-white/90 border border-zinc-200 rounded-lg text-xs text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#0096B4]/40 focus:border-[#0096B4] transition-all shadow-sm"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSignUpPassword(!showSignUpPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-zinc-400 hover:text-zinc-600 transition-colors"
+                  >
+                    {showSignUpPassword ? (
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858-5.908a10.05 10.05 0 012.122-.063c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21M3 3l18 18" />
+                      </svg>
+                    ) : (
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+
+                {/* Password Strength Meter */}
+                {signUpPassword ? (
+                  <div className="pt-0.5 animate-fade-in-up">
+                    <div className="flex items-center justify-between text-[10px] text-zinc-500 mb-1">
+                      <span>Strength: <strong className="text-zinc-800">{passStrength.label}</strong></span>
+                    </div>
+                    <div className="w-full h-1 bg-zinc-200 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full ${passStrength.color} transition-all duration-300`}
+                        style={{ width: `${passStrength.score}%` }}
+                      />
+                    </div>
+                  </div>
+                ) : null}
+
+                {/* Confirm Password Input with Match Indicator */}
+                <div className="relative">
+                  <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-zinc-400">
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </span>
+                  <input
+                    type="password"
+                    required
+                    placeholder="Confirm Password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="w-full pl-9 pr-8 py-2 bg-white/90 border border-zinc-200 rounded-lg text-xs text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#0096B4]/40 focus:border-[#0096B4] transition-all shadow-sm"
+                  />
+                  {passwordsMatch ? (
+                    <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-emerald-500">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </span>
+                  ) : null}
+                </div>
+
+                {/* Terms Checkbox */}
+                <div className="pt-1 pb-1">
+                  <label className="flex items-start gap-1.5 cursor-pointer text-[10px] text-zinc-600 select-none">
+                    <input
+                      type="checkbox"
+                      checked={agreeTerms}
+                      onChange={(e) => setAgreeTerms(e.target.checked)}
+                      className="w-3.5 h-3.5 mt-0.5 rounded border-zinc-300 text-[#0096B4] focus:ring-[#0096B4] cursor-pointer accent-[#0096B4]"
+                    />
+                    <span>
+                      I agree to the <a href="#terms" className="text-[#0096B4] font-semibold hover:underline">Terms of Service</a> & <a href="#privacy" className="text-[#0096B4] font-semibold hover:underline">Privacy Policy</a>
+                    </span>
+                  </label>
+                </div>
+
+                {/* Send OTP Action Button */}
                 <button
-                  type="button"
-                  onClick={() => setShowSignUpPassword(!showSignUpPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-zinc-400 hover:text-zinc-600 transition-colors"
+                  type="submit"
+                  disabled={!agreeTerms || loading}
+                  className="group w-full py-2.5 mt-1 bg-gradient-to-r from-[#0096B4] to-[#00B4D8] hover:from-[#00819C] hover:to-[#0096B4] active:scale-[0.98] text-white font-bold text-xs uppercase tracking-wider rounded-lg shadow-md hover:shadow-lg hover:shadow-cyan-500/25 transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
-                  {showSignUpPassword ? (
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858-5.908a10.05 10.05 0 012.122-.063c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21M3 3l18 18" />
-                    </svg>
+                  {loading ? (
+                    <>
+                      <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      <span>Sending OTP...</span>
+                    </>
                   ) : (
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
+                    <>
+                      <span>Get Verification Code</span>
+                      <svg className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                      </svg>
+                    </>
                   )}
                 </button>
-              </div>
-
-              {/* Password Strength Meter */}
-              {signUpPassword ? (
-                <div className="pt-0.5 animate-fade-in-up">
-                  <div className="flex items-center justify-between text-[10px] text-zinc-500 mb-1">
-                    <span>Strength: <strong className="text-zinc-800">{passStrength.label}</strong></span>
-                  </div>
-                  <div className="w-full h-1 bg-zinc-200 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full ${passStrength.color} transition-all duration-300`}
-                      style={{ width: `${passStrength.score}%` }}
-                    />
-                  </div>
+              </form>
+            ) : (
+              /* STEP 2: OTP VERIFICATION SLIDE */
+              <form onSubmit={handleVerifyOtpAndSignUp} className="space-y-3 animate-fade-in-up">
+                <div className="bg-cyan-50/80 border border-cyan-200 rounded-xl p-3 text-center">
+                  <p className="text-[11px] text-zinc-600">
+                    We sent a 6-digit verification code to:
+                  </p>
+                  <p className="font-extrabold text-xs text-[#0096B4] truncate mt-0.5">
+                    {signUpEmail}
+                  </p>
+                  {devOtpBadge && (
+                    <div className="mt-2 inline-block bg-amber-100 border border-amber-300 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      🔑 DEV MODE OTP: {devOtpBadge}
+                    </div>
+                  )}
                 </div>
-              ) : null}
 
-              {/* Confirm Password Input with Match Indicator */}
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-zinc-400">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                  </svg>
-                </span>
-                <input
-                  type="password"
-                  required
-                  placeholder="Confirm Password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full pl-9 pr-8 py-2 bg-white/90 border border-zinc-200 rounded-lg text-xs text-zinc-800 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-[#0096B4]/40 focus:border-[#0096B4] transition-all shadow-sm"
-                />
-                {passwordsMatch ? (
-                  <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-emerald-500">
-                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
-                    </svg>
-                  </span>
-                ) : null}
-              </div>
-
-              {/* Terms Checkbox */}
-              <div className="pt-1 pb-1">
-                <label className="flex items-start gap-1.5 cursor-pointer text-[10px] text-zinc-600 select-none">
+                <div>
+                  <label className="block text-center text-[11px] font-bold text-zinc-700 uppercase tracking-wider mb-1.5">
+                    Enter 6-Digit OTP Code
+                  </label>
                   <input
-                    type="checkbox"
-                    checked={agreeTerms}
-                    onChange={(e) => setAgreeTerms(e.target.checked)}
-                    className="w-3.5 h-3.5 mt-0.5 rounded border-zinc-300 text-[#0096B4] focus:ring-[#0096B4] cursor-pointer accent-[#0096B4]"
+                    type="text"
+                    required
+                    maxLength={6}
+                    placeholder="000000"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                    className="w-full text-center text-xl font-mono font-black tracking-[0.5em] py-2.5 bg-white border border-zinc-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0096B4] focus:border-[#0096B4] shadow-inner"
                   />
-                  <span>
-                    I agree to the <a href="#terms" className="text-[#0096B4] font-semibold hover:underline">Terms of Service</a> & <a href="#privacy" className="text-[#0096B4] font-semibold hover:underline">Privacy Policy</a>
-                  </span>
-                </label>
-              </div>
+                </div>
 
-              {/* Gradient Action Button with Hover Arrow */}
-              <button
-                type="submit"
-                disabled={!agreeTerms}
-                className="group w-full py-2.5 mt-1 bg-gradient-to-r from-[#0096B4] to-[#00B4D8] hover:from-[#00819C] hover:to-[#0096B4] active:scale-[0.98] text-white font-bold text-xs uppercase tracking-wider rounded-lg shadow-md hover:shadow-lg hover:shadow-cyan-500/25 transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
-              >
-                <span>Create Account</span>
-                <svg className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                </svg>
-              </button>
-            </form>
+                {/* Resend Timer & Action Row */}
+                <div className="flex items-center justify-between text-[11px] text-zinc-500 px-1">
+                  <button
+                    type="button"
+                    onClick={() => setSignUpStep('DETAILS')}
+                    className="text-zinc-600 font-semibold hover:text-[#0096B4] hover:underline cursor-pointer flex items-center gap-1"
+                  >
+                    ← Edit Details
+                  </button>
+
+                  {canResendOtp ? (
+                    <button
+                      type="button"
+                      onClick={(e) => handleSendOtp(e)}
+                      className="text-[#0096B4] font-bold hover:underline cursor-pointer"
+                    >
+                      Resend Code
+                    </button>
+                  ) : (
+                    <span>Resend in {otpTimer}s</span>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || otpCode.length !== 6}
+                  className="w-full py-2.5 bg-gradient-to-r from-[#0096B4] to-[#00B4D8] hover:from-[#00819C] hover:to-[#0096B4] active:scale-[0.98] text-white font-bold text-xs uppercase tracking-wider rounded-lg shadow-md hover:shadow-lg hover:shadow-cyan-500/25 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {loading ? (
+                    <>
+                      <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      <span>Verifying...</span>
+                    </>
+                  ) : (
+                    "Verify & Create Account 🚀"
+                  )}
+                </button>
+              </form>
+            )}
 
             {/* Footer Link to Slide back to Login */}
             <p className="text-center text-[11px] text-zinc-500 mt-3 font-normal">
