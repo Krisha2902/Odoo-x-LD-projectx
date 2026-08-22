@@ -122,13 +122,7 @@ export default function ExplorePage() {
       {/* MAIN CAROUSEL CONTENT CONTAINER */}
       <main className="relative z-10 max-w-7xl mx-auto px-6 sm:px-12 min-h-[calc(100vh-80px)] flex flex-col justify-between pt-8 pb-12">
         {/* TOP SUB-HEADER BAR */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
-            <span className="text-xs font-black uppercase tracking-widest text-cyan-300 bg-black/40 backdrop-blur-md px-3.5 py-1 rounded-full border border-white/10">
-              CINEMATIC DESTINATION SHOWCASE
-            </span>
-          </div>
+        <div className="flex items-center justify-end">
 
           <div className="text-xs font-bold text-zinc-400 bg-black/40 backdrop-blur-md px-3.5 py-1 rounded-full border border-white/10">
             <span className="text-cyan-400 font-extrabold text-sm">0{activeIndex + 1}</span> / 0
