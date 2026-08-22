@@ -6,14 +6,12 @@ const authMiddleware = require('../middleware/auth');
 
 const router = express.Router({ mergeParams: true });
 
-// Updated schema: accepts a city_name string instead of a strict database ID
+// Clean, unified schema accepting dynamic city names
 const stopSchema = z.object({
   city_name: z.string().min(1, "City name is required"),
   country: z.string().optional().default("India"),
   lat: z.number().optional().default(0.0),
   lng: z.number().optional().default(0.0),
-const stopSchema = z.object({
-  city_id: z.number().int().positive(),
   order_index: z.number().int().nonnegative(),
   start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   end_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -48,12 +46,12 @@ router.post('/', authMiddleware, async (req, res) => {
       cityId = cityRes.rows[0].id;
     }
 
-    // 3. Now insert the stop using the resolved (or newly created) city ID
+    // 3. Now insert the stop using the resolved (or newly created) cityId
     const stopRes = await pool.query(
       `INSERT INTO stops (trip_id, city_id, order_index, start_date, end_date)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [tripId, parsed.city_id, parsed.order_index, parsed.start_date, parsed.end_date]
+      [tripId, cityId, parsed.order_index, parsed.start_date, parsed.end_date]
     );
 
     res.status(201).json({ stop: stopRes.rows[0] });
