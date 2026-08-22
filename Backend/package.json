@@ -10,10 +10,17 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google/genai": "^2.18.0",
+    "bcrypt": "^6.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "pg": "^8.23.0"
+    "jsonwebtoken": "^9.0.3",
+    "nodemailer": "^6.10.1",
+    "pg": "^8.23.0",
+    "socket.io": "^4.8.3",
+    "sockets": "^0.4.2",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

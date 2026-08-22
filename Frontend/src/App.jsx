@@ -1,122 +1,202 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import React, { useEffect, useState } from 'react';
+import LoginPage from './pages/login.jsx';
+import DashboardPage from './pages/dashboard.jsx';
+import { apiClient, getToken, removeToken } from './api/client';
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = getToken();
+      if (!token) {
+        setLoading(false);
+        return;
+      }
 
-      <div className="ticks"></div>
+      try {
+        const res = await apiClient.get('/auth/me');
+        setUser(res.user);
+      } catch (err) {
+        console.warn('Session expired or token invalid:', err.message);
+        removeToken();
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+    checkAuth();
+  }, []);
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+  const handleAuthSuccess = (userData) => {
+    setUser(userData);
+  };
+
+  const handleLogout = () => {
+    removeToken();
+    setUser(null);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-slate-950 text-white">
+        <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-[#0096B4] to-cyan-400 flex items-center justify-center font-black text-2xl animate-bounce shadow-lg shadow-cyan-500/30 mb-4">
+          G
+        </div>
+        <p className="text-xs font-bold tracking-widest text-cyan-400 uppercase animate-pulse">
+          Connecting to GlobeTrotter...
+        </p>
+      </div>
+    );
+  }
+
+  return user ? (
+    <DashboardPage user={user} onLogout={handleLogout} />
+  ) : (
+    <LoginPage onAuthSuccess={handleAuthSuccess} />
+  );
 }
 
-export default App
+export default App;
+import { Routes, Route } from "react-router-dom";
+
+import LoginPage from "./pages/login.jsx";
+
+import Navbar from "./components/Navbar/Navbar";
+import Footer from "./components/Footer/Footer";
+
+import Home from "./pages/Home/Home";
+import Explore from "./pages/Explore/Explore";
+import MyTrips from "./pages/MyTrips/MyTrips";
+import OngoingTrips from "./pages/OngoingTrips/OngoingTrips";
+import Calendar from "./pages/Calendar/Calendar";
+import Profile from "./pages/Profile/Profile";
+import PlanTrip from "./pages/PlanTrip/PlanTrip";
+
+function App() {
+  return (
+    <div className="min-h-screen bg-[#071517]">
+      <Routes>
+
+        {/* =================================================
+            LOGIN
+            No navbar on login page
+        ================================================= */}
+
+        <Route
+          path="/login"
+          element={<LoginPage />}
+        />
+
+        {/* =================================================
+            HOME
+        ================================================= */}
+
+        <Route
+          path="/"
+          element={
+            <>
+              <Navbar />
+              <Home />      
+            </>
+          }
+        />
+
+        {/* =================================================
+            EXPLORE
+        ================================================= */}
+
+        <Route
+          path="/explore"
+          element={
+            <>
+              <Navbar />
+              <Explore />
+              <Footer />  
+            </>
+          }
+        />
+
+        {/* =================================================
+            MY TRIPS
+        ================================================= */}
+
+        <Route
+          path="/my-trips"
+          element={
+            <>
+              <Navbar />
+              <MyTrips />
+              <Footer />
+            </>
+          }
+        />
+
+        {/* =================================================
+            ONGOING TRIPS
+        ================================================= */}
+
+        <Route
+          path="/ongoing-trips"
+          element={
+            <>
+              <Navbar />
+              <OngoingTrips />
+              <Footer />
+            </>   
+          }
+        />
+
+        {/* =================================================
+            CALENDAR
+        ================================================= */}
+
+        <Route
+          path="/calendar"
+          element={
+            <>
+              <Navbar />
+              <Calendar />
+              <Footer />
+            </>
+          }
+        />
+
+        {/* =================================================
+            PROFILE
+        ================================================= */}
+
+        <Route
+          path="/profile"
+          element={
+            <>
+              <Navbar />
+              <Profile />
+              <Footer />
+            </>
+          }
+        />
+
+        {/* =================================================
+            PLAN TRIP
+        ================================================= */}
+
+        <Route
+          path="/plan-trip"
+          element={
+            <>
+              <Navbar />
+              <PlanTrip />
+              <Footer />
+            </>
+          }
+        />
+
+      </Routes>
+    </div>
+  );
+}
+
+export default App;
