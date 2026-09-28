@@ -2,13 +2,11 @@
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
+const cors = require('cors');
 
 const { initSockets } = require('./src/sockets');
-const cors = require('cors');
 
-// 1. Import all routes (Initialization)
-const cors = require('cors');
-
+// 1. Import all routes
 const authRoutes = require('./src/routes/auth');
 const tripRoutes = require('./src/routes/trips');
 const stopRoutes = require('./src/routes/stops');
@@ -20,7 +18,6 @@ const aiRoutes = require('./src/routes/ai');
 const voteRoutes = require('./src/routes/votes');
 const inviteRoutes = require('./src/routes/invites');
 
-
 const app = express();
 const server = http.createServer(app);
 
@@ -28,8 +25,6 @@ const server = http.createServer(app);
 initSockets(server);
 
 // 3. Middleware
-
-const app = express();
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -58,6 +53,7 @@ app.use('/items', itemRoutes);
 app.use('/items/:itemId', voteRoutes);
 app.use('/trips/:tripId/budget', budgetRoutes);
 app.use('/trips/:tripId', aiRoutes);
+app.use('/ai', aiRoutes);
 app.use('/', inviteRoutes);
 app.use('/', catalogRoutes);
 app.use('/public', publicRoutes);
@@ -72,15 +68,4 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 8000;
 server.listen(PORT, () => console.log(`🚀 GlobeTrotter running on port ${PORT}`));
-// Mount routers
-app.use('/auth', authRoutes);
-app.use('/trips', tripRoutes);
-app.use('/trips/:tripId/stops', stopRoutes);
-app.use('/stops', stopRoutes); // For standalone /stops/:id/reorder & delete
-app.use('/stops/:stopId/items', itemRoutes);
-app.use('/items', itemRoutes); // For standalone /items/:id updates & delete
 
-app.get('/ping', (req, res) => res.json({ message: 'Hi Chmanas!' }));
-
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 GlobeTrotter server running on port ${PORT}`));

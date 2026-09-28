@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import Navbar from "../components/Navbar";
 import TripMap from "../components/TripMap";
 import PlaneCursor from "../components/PlaneCursor";
 import { tripsAPI } from "../services/api";
@@ -11,73 +10,109 @@ export default function MapViewPage() {
   const [stops, setStops] = useState([]);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     tripsAPI
-      .getById(id)
+      .getFull(id)
+      .catch(() => tripsAPI.getById(id))
       .then((data) => {
-        setTrip(data.trip || data);
-        setStops(data.stops || data.trip?.stops || []);
-        setItems(data.items || data.trip?.items || []);
+        const fetchedTrip = data.trip || data;
+        setTrip(fetchedTrip);
+        const fetchedStops = data.stops || fetchedTrip.stops || [];
+        setStops(fetchedStops);
+
+        let extractedItems = [];
+        if (Array.isArray(fetchedStops)) {
+          fetchedStops.forEach((s) => {
+            if (Array.isArray(s.items)) {
+              s.items.forEach((it) => {
+                extractedItems.push({
+                  ...it,
+                  stopId: s.id || s.stop_id,
+                  cityName: s.city_name || s.cityName,
+                });
+              });
+            }
+          });
+        }
+        if (extractedItems.length === 0) {
+          extractedItems = data.items || fetchedTrip.items || [];
+        }
+        setItems(extractedItems);
       })
-      .catch(() => {
-        const seedTrip = { id: id || "trip_1", title: "Ultimate Bali & Island Hopping" };
-        const seedStops = [
-          { id: "s1", cityName: "Ubud", nights: 3, lat: -8.5069, lng: 115.2625 },
-          { id: "s2", cityName: "Seminyak", nights: 2, lat: -8.6913, lng: 115.1682 },
-          { id: "s3", cityName: "Nusa Penida", nights: 2, lat: -8.7278, lng: 115.5444 },
-        ];
-        const seedItems = [
-          { id: "i1", title: "Sacred Monkey Forest", category: "Activity", cost: 15, time: "09:00 AM", location: "Ubud Center", lat: -8.5194, lng: 115.2606 },
-          { id: "i2", title: "Sunset Beach Club Dinner", category: "Dining", cost: 120, time: "06:30 PM", location: "Seminyak Beach", lat: -8.6888, lng: 115.1558 },
-          { id: "i3", title: "Kelingking Beach Snorkeling", category: "Activity", cost: 75, time: "09:00 AM", location: "Nusa Penida", lat: -8.7505, lng: 115.4746 },
-        ];
-        setTrip(seedTrip);
-        setStops(seedStops);
-        setItems(seedItems);
+      .catch((err) => {
+        console.error("Failed to load map data:", err);
+        setError("Unable to load map data. Please try again.");
       })
       .finally(() => setLoading(false));
   }, [id]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans overflow-x-hidden pb-16">
+    <div className="min-h-screen bg-[#071C1C] text-white font-sans overflow-x-hidden pb-16 select-none">
       <PlaneCursor />
-      <Navbar />
 
-      <main className="max-w-7xl mx-auto px-6 sm:px-12 pt-8">
-        <div className="flex items-center justify-between gap-4 mb-6">
+      {/* Main container with pt-24 so it is not overlapped by fixed 72px Navbar */}
+      <main className="max-w-7xl mx-auto px-6 sm:px-12 pt-24">
+        {/* Top Header & Subpage Navigation */}
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-4 border-b border-white/10">
           <div className="text-left">
-            <Link to={`/trips/${id}/build`} className="text-zinc-400 hover:text-white text-xs font-bold mb-1 inline-block">
-              &larr; Back to Builder
-            </Link>
-            <h1 className="text-3xl font-black uppercase text-white tracking-tight">
-              {trip?.title || "Trip Route Map"}
+            <div className="flex items-center gap-2 mb-1">
+              <Link
+                to={`/trips/${id}`}
+                className="text-xs font-bold text-[#72F0D0] hover:underline"
+              >
+                &larr; Trip Overview
+              </Link>
+              <span className="text-zinc-600">|</span>
+              <Link
+                to={`/trips/${id}/build`}
+                className="text-xs font-bold text-zinc-400 hover:text-white"
+              >
+                Edit Itinerary
+              </Link>
+            </div>
+            <h1 className="text-2xl sm:text-4xl font-black uppercase text-white tracking-tight flex items-center gap-2">
+              <span>🗺️</span>
+              <span>{trip?.title || "Trip Route Map"}</span>
             </h1>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <Link
+              to={`/trips/${id}/build`}
+              className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all"
+            >
+              ✏️ Builder
+            </Link>
             <Link
               to={`/trips/${id}/timeline`}
-              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold"
+              className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all"
             >
               📅 Timeline
             </Link>
             <Link
               to={`/trips/${id}/conduct`}
-              className="px-4 py-2 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-extrabold text-xs"
+              className="px-3.5 py-1.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-extrabold text-xs transition-all shadow"
             >
               📢 Conductor View
             </Link>
           </div>
         </div>
 
+        {error && (
+          <div className="mb-6 p-4 rounded-2xl bg-rose-500/20 border border-rose-500/40 backdrop-blur-md flex items-center justify-between gap-4 text-rose-200 text-xs font-semibold">
+            <span>⚠️ {error}</span>
+          </div>
+        )}
+
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 text-zinc-400 gap-3">
-            <span className="w-8 h-8 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-            <span className="text-xs font-bold uppercase">Loading map...</span>
+          <div className="flex flex-col items-center justify-center py-24 text-zinc-400 gap-3">
+            <span className="w-8 h-8 border-4 border-[#72F0D0] border-t-transparent rounded-full animate-spin" />
+            <span className="text-xs font-bold uppercase tracking-wider">Loading interactive map & routes...</span>
           </div>
         ) : (
-          <TripMap stops={stops} items={items} />
+          <TripMap stops={stops} items={items} trip={trip} />
         )}
       </main>
     </div>

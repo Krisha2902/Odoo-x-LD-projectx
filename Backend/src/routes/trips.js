@@ -80,6 +80,68 @@ router.post('/', authMiddleware, async (req, res) => {
   }
 });
 
+// GET /trips/:id - Get single trip details
+router.get('/:id', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const memberCheck = await pool.query(
+      `SELECT role FROM trip_members WHERE trip_id = $1 AND user_id = $2`,
+      [id, req.user.userId]
+    );
+
+    if (memberCheck.rows.length === 0) {
+      return res.status(403).json({ error: { code: 'FORBIDDEN', message: 'You are not a member of this trip' } });
+    }
+
+    const tripRes = await pool.query(`SELECT * FROM trips WHERE id = $1`, [id]);
+    if (tripRes.rows.length === 0) {
+      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Trip not found' } });
+    }
+
+    const stopsRes = await pool.query(
+      `SELECT 
+        s.id AS stop_id, s.order_index, s.start_date AS stop_start_date, s.end_date AS stop_end_date,
+        c.id AS city_id, c.name AS city_name, c.country AS city_country, c.lat, c.lng,
+        COALESCE(
+          json_agg(
+            json_build_object(
+              'id', i.id,
+              'stop_id', i.stop_id,
+              'stopId', i.stop_id,
+              'activity_catalog_id', i.activity_catalog_id,
+              'custom_name', i.custom_name,
+              'title', i.custom_name,
+              'category', i.category,
+              'cost', i.cost,
+              'scheduled_date', i.scheduled_date,
+              'scheduled_time', i.scheduled_time,
+              'duration_minutes', i.duration_minutes,
+              'notes', i.notes,
+              'updated_at', i.updated_at
+            ) ORDER BY i.scheduled_date ASC, i.scheduled_time ASC
+          ) FILTER (WHERE i.id IS NOT NULL), '[]'
+        ) AS items
+       FROM stops s
+       JOIN cities c ON s.city_id = c.id
+       LEFT JOIN itinerary_items i ON s.id = i.stop_id
+       WHERE s.trip_id = $1
+       GROUP BY s.id, c.id
+       ORDER BY s.order_index ASC`,
+      [id]
+    );
+
+    res.json({
+      trip: {
+        ...tripRes.rows[0],
+        role: memberCheck.rows[0].role,
+        stops: stopsRes.rows,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({ error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+});
+
 // GET /trips/:id/full - Nested hydrate endpoint
 router.get('/:id/full', authMiddleware, async (req, res) => {
   try {
@@ -111,8 +173,11 @@ router.get('/:id/full', authMiddleware, async (req, res) => {
           json_agg(
             json_build_object(
               'id', i.id,
+              'stop_id', i.stop_id,
+              'stopId', i.stop_id,
               'activity_catalog_id', i.activity_catalog_id,
               'custom_name', i.custom_name,
+              'title', i.custom_name,
               'category', i.category,
               'cost', i.cost,
               'scheduled_date', i.scheduled_date,

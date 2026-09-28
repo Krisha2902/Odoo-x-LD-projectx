@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -52,6 +52,10 @@ export const tripsAPI = {
     const res = await api.get(`/trips/${id}`);
     return res.data;
   },
+  getFull: async (id) => {
+    const res = await api.get(`/trips/${id}/full`);
+    return res.data;
+  },
   create: async (tripData) => {
     const res = await api.post("/trips", tripData);
     return res.data;
@@ -89,14 +93,14 @@ export const aiAPI = {
 // Cities & Catalog API Endpoints
 export const catalogAPI = {
   getDestinations: async () => {
-    const res = await api.get("/catalog/destinations");
+    const res = await api.get("/cities");
     return res.data;
   },
 };
 
 export const citiesAPI = {
   search: async (query) => {
-    const res = await api.get("/catalog/destinations", { params: { search: query } });
+    const res = await api.get("/cities", { params: { search: query } });
     return res.data;
   },
 };
@@ -107,8 +111,8 @@ export const stopsAPI = {
     const res = await api.post(`/trips/${tripId}/stops`, stopData);
     return res.data;
   },
-  reorder: async (tripId, orderedStopIds) => {
-    const res = await api.put(`/trips/${tripId}/stops/reorder`, { orderedStopIds });
+  reorder: async (stopId, orderIndex) => {
+    const res = await api.patch(`/stops/${stopId}/reorder`, { order_index: orderIndex });
     return res.data;
   },
   delete: async (stopId) => {
@@ -140,34 +144,26 @@ export const itemsAPI = {
 // Public Share & Community Feed API Endpoints
 export const exploreAPI = {
   getPublicTrips: async () => {
-    const res = await api.get("/explore");
+    const res = await api.get("/public/feed");
     return res.data;
   },
 };
 
 export const shareAPI = {
   getBySlug: async (slug) => {
-    const res = await api.get(`/public/share/${slug}`);
+    const res = await api.get(`/public/trips/${slug}`);
     return res.data;
   },
 };
 
 export const userAPI = {
   updateProfile: async (formData) => {
-    try {
-      const res = await api.patch("/auth/me", formData);
-      return res.data;
-    } catch {
-      return { success: true, user: formData };
-    }
+    const res = await api.patch("/auth/me", formData);
+    return res.data;
   },
   getSavedPlaces: async () => {
-    try {
-      const res = await api.get("/user/saved-places");
-      return res.data;
-    } catch {
-      return { places: [] };
-    }
+    const res = await api.get("/user/saved-places");
+    return res.data;
   },
 };
 

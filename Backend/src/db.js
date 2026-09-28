@@ -199,14 +199,23 @@ function executeMemoryQuery(text, params = []) {
 
     const rows = tripStops.map((s) => {
       const city = citiesMap[s.city_id] || { id: s.city_id, name: 'Unknown City', country: 'Global', lat: 0, lng: 0 };
-      const items = memoryDb.itinerary_items.filter((i) => i.stop_id === s.id);
+      const items = memoryDb.itinerary_items
+        .filter((i) => i.stop_id === s.id)
+        .map((i) => ({
+          ...i,
+          stop_id: s.id,
+          stopId: s.id,
+          title: i.custom_name || i.title || 'Activity',
+        }));
       return {
+        id: s.id,
         stop_id: s.id,
         order_index: s.order_index,
         stop_start_date: s.start_date,
         stop_end_date: s.end_date,
         city_id: city.id,
         city_name: city.name,
+        cityName: city.name,
         city_country: city.country,
         lat: city.lat,
         lng: city.lng,

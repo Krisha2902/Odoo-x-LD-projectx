@@ -4,17 +4,41 @@ const { z } = require('zod');
 const pool = require('../db');
 const authMiddleware = require('../middleware/auth');
 const { requireRole } = require('../middleware/rbac');
-const { generateItinerary } = require('../services/ai'); // This imports the service you updated earlier!
+const { generateItinerary, generatePlan } = require('../services/ai');
 
 const router = express.Router({ mergeParams: true });
 
 const generateSchema = z.object({
-  interests: z.array(z.string()).min(1),
-  pace: z.enum(['relaxed', 'packed']),
-  budgetTier: z.string(),
+  interests: z.union([z.array(z.string()), z.string()]).optional(),
+  pace: z.enum(['relaxed', 'packed', 'balanced']).optional().default('balanced'),
+  budgetTier: z.string().optional().default('moderate'),
 });
 
-// POST /trips/:tripId/generate
+// POST /ai/generate-itinerary (Direct AI generation for PlanTrip)
+router.post('/generate-itinerary', async (req, res) => {
+  try {
+    const { destination, startingLocation, origin, startDate, endDate, budget, travelers, preferences, pace, budgetTier } = req.body;
+
+    const plan = await generatePlan({
+      destination: destination || 'Rome, Italy',
+      startingLocation: startingLocation || origin || 'Home',
+      startDate: startDate || '2026-10-01',
+      endDate: endDate || '2026-10-04',
+      budget: budget || 1500,
+      travelers: travelers || 2,
+      preferences: preferences || ['Culture & History', 'Food & Dining'],
+      pace: pace || 'balanced',
+      budgetTier: budgetTier || 'moderate',
+    });
+
+    res.json(plan);
+  } catch (error) {
+    console.error('Direct AI generate-itinerary error:', error);
+    res.status(500).json({ error: { code: 'AI_GENERATION_FAILED', message: error.message } });
+  }
+});
+
+// POST /trips/:tripId/generate (Authenticated trip-level AI generation)
 router.post('/generate', authMiddleware, requireRole(['owner', 'conductor']), async (req, res) => {
   const { tripId } = req.params;
   try {
@@ -31,7 +55,6 @@ router.post('/generate', authMiddleware, requireRole(['owner', 'conductor']), as
     try {
       items = await generateItinerary(tripRes.rows[0], stopsRes.rows, preferences);
     } catch (err) {
-      // Retry once if JSON parsing failed
       items = await generateItinerary(tripRes.rows[0], stopsRes.rows, preferences);
     }
 

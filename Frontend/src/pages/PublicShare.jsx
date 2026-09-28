@@ -72,9 +72,8 @@ export default function PublicSharePage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans overflow-x-hidden pb-16 select-none">
+    <div className="min-h-screen bg-slate-950 text-white font-sans overflow-x-hidden pb-16">
       <PlaneCursor />
-      <Navbar />
 
       <main className="max-w-7xl mx-auto px-6 sm:px-12 pt-8">
         {/* Banner Header */}

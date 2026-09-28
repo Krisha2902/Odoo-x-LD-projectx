@@ -24,6 +24,7 @@ import PublicSharePage from "./pages/PublicShare.jsx";
 import ExplorePage from "./pages/Explore.jsx";
 import CalendarPage from "./pages/Calendar/Calendar.jsx";
 import ProfilePage from "./pages/Profile/Profile.jsx";
+import NotFoundPage from "./pages/NotFound.jsx";
 
 // Protected Route Wrapper for Authenticated Pages
 function ProtectedRoute({ children }) {
@@ -242,7 +243,7 @@ export default function App() {
               element={
                 <>
                   <Navbar />
-                  <HomeWrapper />
+                  <NotFoundPage />
                   <Footer />
                 </>
               }

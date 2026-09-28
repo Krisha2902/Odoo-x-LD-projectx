@@ -5,8 +5,6 @@ const jwt = require('jsonwebtoken');
 const { z } = require('zod');
 const pool = require('../db'); 
 const authMiddleware = require('../middleware/auth'); 
-const pool = require('../db'); // Assuming standard pg pool export
-const authMiddleware = require('../middleware/auth'); // Standard JWT verification middleware
 
 const nodemailer = require('nodemailer');
 
@@ -217,6 +215,58 @@ router.get('/me', authMiddleware, async (req, res) => {
     res.json({ user: result.rows[0] });
   } catch (error) {
     res.status(500).json({ error: { code: 'SERVER_ERROR', message: 'Internal server error' } });
+  }
+});
+
+// PATCH /auth/me - Update profile details
+router.patch('/me', authMiddleware, async (req, res) => {
+  try {
+    const { name, email, bio, location, avatar, coverBg } = req.body;
+    let query = 'UPDATE users SET ';
+    const params = [];
+    const fields = [];
+
+    if (name !== undefined) {
+      params.push(name);
+      fields.push(`name = $${params.length}`);
+    }
+    if (email !== undefined) {
+      params.push(email);
+      fields.push(`email = $${params.length}`);
+    }
+    if (bio !== undefined) {
+      params.push(bio);
+      fields.push(`bio = $${params.length}`);
+    }
+    if (location !== undefined) {
+      params.push(location);
+      fields.push(`location = $${params.length}`);
+    }
+    if (avatar !== undefined) {
+      params.push(avatar);
+      fields.push(`avatar = $${params.length}`);
+    }
+    if (coverBg !== undefined) {
+      params.push(coverBg);
+      fields.push(`cover_bg = $${params.length}`);
+    }
+
+    if (fields.length === 0) {
+      return res.status(400).json({ error: { code: 'BAD_REQUEST', message: 'No fields provided for update' } });
+    }
+
+    params.push(req.user.userId);
+    query += fields.join(', ') + ` WHERE id = $${params.length} RETURNING *`;
+
+    const result = await pool.query(query, params);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'User not found' } });
+    }
+    const updatedUser = result.rows[0];
+    delete updatedUser.password_hash;
+    res.json({ user: updatedUser });
+  } catch (error) {
+    res.status(500).json({ error: { code: 'SERVER_ERROR', message: error.message } });
   }
 });
 

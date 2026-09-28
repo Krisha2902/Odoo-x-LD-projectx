@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
-import Navbar from "../components/Navbar";
+import Navbar from "../components/Navbar/Navbar";
 import StopList from "../components/StopList";
 import ItineraryItemCard from "../components/ItineraryItemCard";
 import BudgetSummaryPanel from "../components/BudgetSummaryPanel";
@@ -28,6 +28,7 @@ export default function TripBuilderPage() {
 
   // New Itinerary Item Modal State
   const [isItemModalOpen, setIsItemModalOpen] = useState(false);
+  const [editingItemId, setEditingItemId] = useState(null);
   const [itemTitle, setItemTitle] = useState("");
   const [itemCategory, setItemCategory] = useState("Activity");
   const [itemCost, setItemCost] = useState(50);
@@ -39,40 +40,75 @@ export default function TripBuilderPage() {
   const loadTripData = async () => {
     setLoading(true);
     try {
-      const data = await tripsAPI.getById(id);
-      setTrip(data.trip || data);
-      const loadedStops = data.stops || data.trip?.stops || [];
-      setStops(loadedStops);
-      if (loadedStops.length > 0) {
-        setActiveStopId(loadedStops[0].id);
+      const data = await tripsAPI.getFull(id).catch(() => tripsAPI.getById(id));
+      const loadedTrip = data.trip || data;
+      setTrip(loadedTrip);
+
+      // Normalize stops
+      const rawStops = data.stops || loadedTrip.stops || [];
+      const normalizedStops = rawStops.map((s, idx) => ({
+        ...s,
+        id: s.id ?? s.stop_id ?? `stop_${idx}`,
+        stop_id: s.stop_id ?? s.id ?? `stop_${idx}`,
+        cityName: s.cityName || s.city_name || s.name || `Stop ${idx + 1}`,
+        city_name: s.city_name || s.cityName || s.name || `Stop ${idx + 1}`,
+        nights: s.nights || 2,
+        lat: Number(s.lat) || 0,
+        lng: Number(s.lng) || 0,
+        startDate: s.startDate || s.start_date || s.stop_start_date,
+      }));
+      setStops(normalizedStops);
+
+      if (normalizedStops.length > 0) {
+        setActiveStopId((prev) =>
+          prev && normalizedStops.some((s) => String(s.id) === String(prev))
+            ? prev
+            : normalizedStops[0].id
+        );
       }
-      setItems(data.items || data.trip?.items || []);
-    } catch {
-      // Seed fallback trip data for hackathon demo
-      const seedTrip = {
-        id: id || "trip_1",
-        title: "Ultimate Bali & Island Hopping",
-        startDate: "Oct 15, 2026",
-        endDate: "Oct 22, 2026",
-        budgetCap: 2500,
-        role: "owner",
-        stops: [
-          { id: "stop_1", cityName: "Ubud", nights: 3, lat: -8.5069, lng: 115.2625, startDate: "Oct 15" },
-          { id: "stop_2", cityName: "Seminyak", nights: 2, lat: -8.6913, lng: 115.1682, startDate: "Oct 18" },
-          { id: "stop_3", cityName: "Nusa Penida", nights: 2, lat: -8.7278, lng: 115.5444, startDate: "Oct 20" },
-        ],
-        items: [
-          { id: "it_1", stopId: "stop_1", title: "Sacred Monkey Forest Sanctuary", category: "Activity", cost: 15, time: "09:00 AM", location: "Ubud Center", day: "Day 1", upvotes: 3, downvotes: 0 },
-          { id: "it_2", stopId: "stop_1", title: "Traditional Balinese Cooking Class", category: "Dining", cost: 45, time: "01:00 PM", location: "Ubud Market", day: "Day 1", upvotes: 2, downvotes: 0 },
-          { id: "it_3", stopId: "stop_1", title: "Tegallalang Rice Terrace Trek", category: "Sightseeing", cost: 20, time: "08:30 AM", location: "Tegallalang", day: "Day 2", upvotes: 4, downvotes: 0 },
-          { id: "it_4", stopId: "stop_2", title: "Sunset Beach Club Dinner", category: "Dining", cost: 120, time: "06:30 PM", location: "Potato Head Seminyak", day: "Day 4", upvotes: 5, downvotes: 0 },
-          { id: "it_5", stopId: "stop_3", title: "Kelingking Beach & Diamond Beach Snorkeling", category: "Activity", cost: 75, time: "09:00 AM", location: "Nusa Penida", day: "Day 6", upvotes: 6, downvotes: 0 },
-        ],
-      };
-      setTrip(seedTrip);
-      setStops(seedTrip.stops);
-      setActiveStopId(seedTrip.stops[0].id);
-      setItems(seedTrip.items);
+
+      // Normalize and extract items from all stops or root items
+      let extractedItems = [];
+      rawStops.forEach((s) => {
+        if (Array.isArray(s.items)) {
+          s.items.forEach((it) => {
+            extractedItems.push({
+              ...it,
+              id: it.id,
+              stopId: it.stopId ?? it.stop_id ?? s.id ?? s.stop_id,
+              title: it.title || it.custom_name || "Activity",
+              category: it.category || "Activity",
+              cost: Number(it.cost) || 0,
+              time: it.time || it.scheduled_time || "09:00 AM",
+              location: it.location || s.city_name || s.cityName || "Destination",
+              day: it.day || (it.scheduled_date ? `Day ${it.scheduled_date}` : "Day 1"),
+              upvotes: it.upvotes || 0,
+              downvotes: it.downvotes || 0,
+            });
+          });
+        }
+      });
+
+      if (extractedItems.length === 0 && Array.isArray(data.items || loadedTrip.items)) {
+        extractedItems = (data.items || loadedTrip.items).map((it) => ({
+          ...it,
+          id: it.id,
+          stopId: it.stopId ?? it.stop_id,
+          title: it.title || it.custom_name || "Activity",
+          category: it.category || "Activity",
+          cost: Number(it.cost) || 0,
+          time: it.time || it.scheduled_time || "09:00 AM",
+          location: it.location || "Destination",
+          day: it.day || "Day 1",
+          upvotes: it.upvotes || 0,
+          downvotes: it.downvotes || 0,
+        }));
+      }
+
+      setItems(extractedItems);
+    } catch (err) {
+      console.error("Failed to load trip builder data:", err);
+      addToast("Failed to load trip data from server", "error");
     } finally {
       setLoading(false);
     }
@@ -80,6 +116,7 @@ export default function TripBuilderPage() {
 
   useEffect(() => {
     loadTripData();
+
     // Connect Socket.IO Room & Realtime Listeners
     socketService.joinTripRoom(id, user);
 
@@ -106,31 +143,65 @@ export default function TripBuilderPage() {
 
   // Handlers for Stop List
   const handleAddStop = async (city) => {
-    const newStop = {
-      id: `stop_${Date.now()}`,
-      cityName: city.name,
-      nights: 2,
-      lat: city.lat || -8.4095,
-      lng: city.lng || 115.1889,
+    const nextOrder = stops.length + 1;
+    const today = new Date().toISOString().split("T")[0];
+    const newStopPayload = {
+      city_name: city.name,
+      country: city.country || "Global",
+      lat: Number(city.lat) || 0,
+      lng: Number(city.lng) || 0,
+      order_index: nextOrder,
+      start_date: trip?.start_date || today,
+      end_date: trip?.end_date || today,
     };
+
     try {
-      await stopsAPI.add(id, newStop);
-    } catch {
-      // Local addition
+      const res = await stopsAPI.add(id, newStopPayload);
+      const addedStop = res.stop || res;
+      const normalized = {
+        ...addedStop,
+        id: addedStop.id || addedStop.stop_id || `stop_${Date.now()}`,
+        stop_id: addedStop.stop_id || addedStop.id || `stop_${Date.now()}`,
+        cityName: city.name,
+        city_name: city.name,
+        nights: 2,
+        lat: Number(city.lat) || 0,
+        lng: Number(city.lng) || 0,
+      };
+      setStops((prev) => [...prev, normalized]);
+      setActiveStopId(normalized.id);
+      addToast(`Added ${city.name} to stops!`, "success");
+    } catch (err) {
+      console.warn("Backend add stop failed, adding locally:", err);
+      const localStop = {
+        id: `stop_${Date.now()}`,
+        stop_id: `stop_${Date.now()}`,
+        cityName: city.name,
+        city_name: city.name,
+        nights: 2,
+        lat: Number(city.lat) || 0,
+        lng: Number(city.lng) || 0,
+      };
+      setStops((prev) => [...prev, localStop]);
+      setActiveStopId(localStop.id);
+      addToast(`Added ${city.name} to stops!`, "success");
     }
-    setStops((prev) => [...prev, newStop]);
-    setActiveStopId(newStop.id);
-    addToast(`Added ${city.name} to stops!`, "success");
   };
 
   const handleReorderStops = async (orderedStopIds) => {
-    try {
-      await stopsAPI.reorder(id, orderedStopIds);
-    } catch {
-      // Local reorder
-    }
-    const reordered = orderedStopIds.map((stopId) => stops.find((s) => s.id === stopId)).filter(Boolean);
+    const reordered = orderedStopIds
+      .map((stopId) => stops.find((s) => String(s.id) === String(stopId)))
+      .filter(Boolean);
     setStops(reordered);
+
+    try {
+      // Reorder on backend
+      for (let i = 0; i < reordered.length; i++) {
+        await stopsAPI.reorder(reordered[i].id, i + 1);
+      }
+    } catch {
+      // Local reorder succeeds
+    }
   };
 
   const handleDeleteStop = async (stopId) => {
@@ -139,40 +210,125 @@ export default function TripBuilderPage() {
     } catch {
       // Local delete
     }
-    setStops((prev) => prev.filter((s) => s.id !== stopId));
-    if (activeStopId === stopId) {
-      const remaining = stops.filter((s) => s.id !== stopId);
+    const remaining = stops.filter((s) => String(s.id) !== String(stopId));
+    setStops(remaining);
+    setItems((prev) => prev.filter((i) => String(i.stopId) !== String(stopId)));
+
+    if (String(activeStopId) === String(stopId)) {
       if (remaining.length > 0) setActiveStopId(remaining[0].id);
+      else setActiveStopId(null);
     }
-    addToast("Stop deleted", "info");
+    addToast("Stop removed", "info");
   };
 
   // Handlers for Itinerary Items
+  const handleOpenAddModal = () => {
+    setEditingItemId(null);
+    setItemTitle("");
+    setItemCategory("Activity");
+    setItemCost(50);
+    setItemTime("10:00 AM");
+    setItemLocation("");
+    setItemDay("Day 1");
+    setIsItemModalOpen(true);
+  };
+
+  const handleOpenEditModal = (item) => {
+    setEditingItemId(item.id);
+    setItemTitle(item.title || item.custom_name || "");
+    setItemCategory(item.category || "Activity");
+    setItemCost(item.cost || 0);
+    setItemTime(item.time || "10:00 AM");
+    setItemLocation(item.location || "");
+    setItemDay(item.day || "Day 1");
+    setIsItemModalOpen(true);
+  };
+
   const handleAddItemSubmit = async (e) => {
     e.preventDefault();
-    const newItem = {
-      id: `it_${Date.now()}`,
-      stopId: activeStopId,
-      title: itemTitle,
-      category: itemCategory,
-      cost: Number(itemCost),
-      time: itemTime,
-      location: itemLocation,
-      day: itemDay,
-      upvotes: 0,
-      downvotes: 0,
-    };
-
-    try {
-      await itemsAPI.add(activeStopId, newItem);
-    } catch {
-      // Local addition
+    if (!itemTitle.trim() || !activeStopId) {
+      addToast("Please enter an activity title and select a stop", "error");
+      return;
     }
 
-    setItems((prev) => [...prev, newItem]);
-    setIsItemModalOpen(false);
+    if (editingItemId) {
+      // Edit existing item
+      const updated = {
+        title: itemTitle.trim(),
+        custom_name: itemTitle.trim(),
+        category: itemCategory,
+        cost: Number(itemCost) || 0,
+        time: itemTime,
+        location: itemLocation,
+        day: itemDay,
+      };
+
+      try {
+        await itemsAPI.update(editingItemId, updated);
+      } catch {
+        // Local update
+      }
+
+      setItems((prev) =>
+        prev.map((i) => (i.id === editingItemId ? { ...i, ...updated } : i))
+      );
+      addToast("Activity updated!", "success");
+    } else {
+      // Add new item
+      const payload = {
+        custom_name: itemTitle.trim(),
+        category: itemCategory.toLowerCase(),
+        cost: Number(itemCost) || 0,
+        scheduled_time: itemTime.includes(":")
+          ? itemTime.length === 5
+            ? `${itemTime}:00`
+            : itemTime.slice(0, 8)
+          : "10:00:00",
+        scheduled_date: trip?.start_date || new Date().toISOString().split("T")[0],
+        duration_minutes: 60,
+        notes: itemLocation || "",
+      };
+
+      try {
+        const res = await itemsAPI.add(activeStopId, payload);
+        const savedItem = res.item || res;
+        const newItem = {
+          ...savedItem,
+          id: savedItem.id || `it_${Date.now()}`,
+          stopId: activeStopId,
+          title: itemTitle.trim(),
+          category: itemCategory,
+          cost: Number(itemCost) || 0,
+          time: itemTime,
+          location: itemLocation,
+          day: itemDay,
+          upvotes: 0,
+          downvotes: 0,
+        };
+        setItems((prev) => [...prev, newItem]);
+        addToast("Activity added successfully!", "success");
+      } catch (err) {
+        console.warn("Backend item add failed, adding locally:", err);
+        const newItem = {
+          id: `it_${Date.now()}`,
+          stopId: activeStopId,
+          title: itemTitle.trim(),
+          category: itemCategory,
+          cost: Number(itemCost) || 0,
+          time: itemTime,
+          location: itemLocation,
+          day: itemDay,
+          upvotes: 0,
+          downvotes: 0,
+        };
+        setItems((prev) => [...prev, newItem]);
+        addToast("Activity added!", "success");
+      }
+    }
+
     setItemTitle("");
-    addToast(`Added "${newItem.title}" to itinerary!`, "success");
+    setItemLocation("");
+    setIsItemModalOpen(false);
   };
 
   const handleDeleteItem = async (itemId) => {
@@ -186,19 +342,20 @@ export default function TripBuilderPage() {
   };
 
   const handleVoteItem = async (itemId, voteType) => {
+    const isUp = voteType === "up";
     try {
       await itemsAPI.vote(itemId, voteType);
     } catch {
-      // Local vote update
+      // Local fallback
     }
+
     setItems((prev) =>
       prev.map((item) => {
         if (item.id === itemId) {
-          const isUp = voteType === "up";
           return {
             ...item,
-            upvotes: isUp ? item.upvotes + 1 : item.upvotes,
-            downvotes: !isUp ? item.downvotes + 1 : item.downvotes,
+            upvotes: isUp ? (item.upvotes || 0) + 1 : item.upvotes || 0,
+            downvotes: !isUp ? (item.downvotes || 0) + 1 : item.downvotes || 0,
             userVote: voteType,
           };
         }
@@ -207,48 +364,50 @@ export default function TripBuilderPage() {
     );
   };
 
-  const activeStop = stops.find((s) => s.id === activeStopId);
-  const activeStopItems = items.filter((i) => i.stopId === activeStopId);
+  const activeStop = stops.find((s) => String(s.id) === String(activeStopId));
+  const activeStopItems = items.filter((i) => String(i.stopId) === String(activeStopId));
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans overflow-x-hidden pb-12 select-none">
+    <div className="min-h-screen bg-[#071C1C] text-white font-sans overflow-x-hidden pb-16 select-none pt-[72px]">
       <PlaneCursor />
-      <Navbar />
 
       {/* Top Action Header */}
-      <div className="bg-slate-900/90 border-b border-white/10 px-6 sm:px-12 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-16 z-20 backdrop-blur-xl">
-        <div className="flex items-center gap-3">
-          <Link to="/trips" className="text-zinc-400 hover:text-white text-xs font-bold">
+      <div className="bg-slate-900/95 border-b border-white/10 px-4 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3 sticky top-[72px] z-30 backdrop-blur-xl">
+        <div className="flex items-center gap-3 min-w-0">
+          <Link
+            to="/my-trips"
+            className="text-zinc-400 hover:text-white text-xs font-bold whitespace-nowrap"
+          >
             &larr; Back to Trips
           </Link>
           <span className="text-zinc-600">|</span>
-          <h1 className="text-lg font-black text-white uppercase tracking-tight">
+          <h1 className="text-base sm:text-lg font-black text-white uppercase tracking-tight truncate max-w-xs sm:max-w-md">
             {trip?.title || "Trip Builder"}
           </h1>
         </div>
 
-        <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           {/* Socket Collaborator Presence */}
           <CollaboratorPresence collaborators={collaborators} />
 
           {/* Navigation Views */}
           <Link
             to={`/trips/${id}/timeline`}
-            className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all flex items-center gap-1.5"
           >
             <span>📅</span> Timeline
           </Link>
 
           <Link
             to={`/trips/${id}/map`}
-            className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all flex items-center gap-1.5"
           >
             <span>🗺️</span> Map
           </Link>
 
           <Link
             to={`/trips/${id}/conduct`}
-            className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-cyan-300 text-xs font-bold transition-all flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-cyan-300 text-xs font-bold transition-all flex items-center gap-1.5"
           >
             <span>📢</span> Conductor View
           </Link>
@@ -256,7 +415,7 @@ export default function TripBuilderPage() {
           {/* AI Generator CTA */}
           <button
             onClick={() => setIsAIModalOpen(true)}
-            className="px-4 py-2 rounded-full bg-gradient-to-r from-cyan-400 to-teal-300 text-slate-950 font-extrabold text-xs uppercase tracking-wider shadow hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
+            className="px-3.5 py-1.5 rounded-full bg-gradient-to-r from-cyan-400 to-teal-300 text-slate-950 font-extrabold text-xs uppercase tracking-wider shadow hover:scale-105 active:scale-95 transition-all cursor-pointer flex items-center gap-1.5"
           >
             <span>✨ Generate with AI</span>
           </button>
@@ -270,9 +429,9 @@ export default function TripBuilderPage() {
           <span className="text-xs font-bold uppercase tracking-wider">Loading Trip Builder...</span>
         </div>
       ) : (
-        <main className="max-w-7xl mx-auto px-4 sm:px-8 pt-6 grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-140px)]">
+        <main className="max-w-7xl mx-auto px-4 sm:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
           {/* LEFT PANEL: ORDERED STOPS LIST (3 COLS) */}
-          <div className="lg:col-span-3 h-full">
+          <div className="lg:col-span-3">
             <RoleGate userRole={trip?.role} allowedRoles={["owner", "conductor", "editor"]}>
               <StopList
                 stops={stops}
@@ -286,11 +445,16 @@ export default function TripBuilderPage() {
           </div>
 
           {/* CENTER PANEL: SELECTED STOP'S ITINERARY (6 COLS) */}
-          <div className="lg:col-span-6 bg-slate-900/90 border border-white/10 rounded-2xl p-5 flex flex-col h-full overflow-hidden text-left">
+          <div className="lg:col-span-6 bg-slate-900/90 border border-white/10 rounded-2xl p-5 flex flex-col min-h-[580px] max-h-[720px] overflow-hidden text-left shadow-xl">
             <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
-              <div>
-                <h3 className="font-extrabold text-base text-white flex items-center gap-2">
-                  <span>🏙️</span> {activeStop ? activeStop.cityName : "Select a Stop"} Itinerary
+              <div className="min-w-0 flex-1 mr-2">
+                <h3 className="font-extrabold text-base text-white flex items-center gap-2 truncate">
+                  <span>🏙️</span>
+                  <span className="truncate">
+                    {activeStop
+                      ? `${activeStop.cityName || activeStop.city_name} Itinerary`
+                      : "Select a Stop"}
+                  </span>
                 </h3>
                 <span className="text-xs text-zinc-400 font-medium">
                   {activeStopItems.length} activities scheduled
@@ -299,8 +463,9 @@ export default function TripBuilderPage() {
 
               <RoleGate userRole={trip?.role} allowedRoles={["owner", "conductor", "editor"]}>
                 <button
-                  onClick={() => setIsItemModalOpen(true)}
-                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-slate-950 font-extrabold text-xs transition-all shadow cursor-pointer"
+                  disabled={!activeStopId}
+                  onClick={handleOpenAddModal}
+                  className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 disabled:opacity-30 disabled:cursor-not-allowed text-slate-950 font-extrabold text-xs transition-all shadow cursor-pointer shrink-0"
                 >
                   + Add Activity
                 </button>
@@ -309,8 +474,12 @@ export default function TripBuilderPage() {
 
             {/* Itinerary Items List */}
             <div className="flex-1 overflow-y-auto space-y-3 pr-1 custom-scrollbar">
-              {activeStopItems.length === 0 ? (
-                <div className="text-center py-16 text-xs text-zinc-400">
+              {!activeStopId ? (
+                <div className="text-center py-20 text-xs text-zinc-400">
+                  Select a stop from the left panel to view and build its itinerary.
+                </div>
+              ) : activeStopItems.length === 0 ? (
+                <div className="text-center py-20 text-xs text-zinc-400">
                   No itinerary items for this stop yet. Click &quot;+ Add Activity&quot; or &quot;Generate with AI&quot;!
                 </div>
               ) : (
@@ -318,14 +487,7 @@ export default function TripBuilderPage() {
                   <ItineraryItemCard
                     key={item.id}
                     item={item}
-                    onEdit={() => {
-                      setItemTitle(item.title);
-                      setItemCategory(item.category);
-                      setItemCost(item.cost);
-                      setItemTime(item.time);
-                      setItemLocation(item.location);
-                      setIsItemModalOpen(true);
-                    }}
+                    onEdit={() => handleOpenEditModal(item)}
                     onDelete={handleDeleteItem}
                     onVote={handleVoteItem}
                   />
@@ -335,8 +497,11 @@ export default function TripBuilderPage() {
           </div>
 
           {/* RIGHT PANEL: LIVE BUDGET SUMMARY (3 COLS) */}
-          <div className="lg:col-span-3 h-full">
-            <BudgetSummaryPanel items={items} budgetCap={trip?.budgetCap || 2500} />
+          <div className="lg:col-span-3">
+            <BudgetSummaryPanel
+              items={items}
+              budgetCap={trip?.budget_cap || trip?.budgetCap || 2500}
+            />
           </div>
         </main>
       )}
@@ -347,13 +512,13 @@ export default function TripBuilderPage() {
           <div className="bg-slate-900 border border-white/20 rounded-2xl max-w-md w-full p-6 shadow-2xl text-left relative">
             <button
               onClick={() => setIsItemModalOpen(false)}
-              className="absolute top-4 right-4 text-zinc-400 hover:text-white text-sm"
+              className="absolute top-4 right-4 text-zinc-400 hover:text-white text-sm cursor-pointer"
             >
               ✕
             </button>
 
             <h3 className="text-lg font-black text-white uppercase tracking-tight mb-4">
-              Add Itinerary Activity
+              {editingItemId ? "Edit Activity" : "Add Itinerary Activity"}
             </h3>
 
             <form onSubmit={handleAddItemSubmit} className="space-y-4">
@@ -364,7 +529,7 @@ export default function TripBuilderPage() {
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Scuba Diving at Crystal Bay"
+                  placeholder="e.g. Scuba Diving or Museum Tour"
                   value={itemTitle}
                   onChange={(e) => setItemTitle(e.target.value)}
                   className="w-full bg-slate-800 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
@@ -379,7 +544,7 @@ export default function TripBuilderPage() {
                   <select
                     value={itemCategory}
                     onChange={(e) => setItemCategory(e.target.value)}
-                    className="w-full bg-slate-800 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50 cursor-pointer"
+                    className="w-full bg-slate-800 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50 cursor-pointer"
                   >
                     <option value="Activity">Activity</option>
                     <option value="Dining">Dining</option>
@@ -395,6 +560,7 @@ export default function TripBuilderPage() {
                   </label>
                   <input
                     type="number"
+                    min="0"
                     value={itemCost}
                     onChange={(e) => setItemCost(e.target.value)}
                     className="w-full bg-slate-800 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
@@ -405,11 +571,11 @@ export default function TripBuilderPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1">
-                    Time
+                    Scheduled Time
                   </label>
                   <input
                     type="text"
-                    placeholder="10:00 AM"
+                    placeholder="e.g. 10:00 AM"
                     value={itemTime}
                     onChange={(e) => setItemTime(e.target.value)}
                     className="w-full bg-slate-800 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
@@ -418,44 +584,50 @@ export default function TripBuilderPage() {
 
                 <div>
                   <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1">
-                    Day
+                    Day Slot
                   </label>
-                  <input
-                    type="text"
-                    placeholder="Day 1"
+                  <select
                     value={itemDay}
                     onChange={(e) => setItemDay(e.target.value)}
-                    className="w-full bg-slate-800 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
-                  />
+                    className="w-full bg-slate-800 border border-white/15 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50 cursor-pointer"
+                  >
+                    <option value="Day 1">Day 1</option>
+                    <option value="Day 2">Day 2</option>
+                    <option value="Day 3">Day 3</option>
+                    <option value="Day 4">Day 4</option>
+                    <option value="Day 5">Day 5</option>
+                    <option value="Day 6">Day 6</option>
+                    <option value="Day 7">Day 7</option>
+                  </select>
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-bold text-zinc-300 uppercase tracking-wider mb-1">
-                  Location
+                  Location / Notes (Optional)
                 </label>
                 <input
                   type="text"
-                  placeholder="Beachside Road 4"
+                  placeholder="e.g. Downtown Harbor Pier 3"
                   value={itemLocation}
                   onChange={(e) => setItemLocation(e.target.value)}
                   className="w-full bg-slate-800 border border-white/15 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
                 />
               </div>
 
-              <div className="pt-4 flex justify-end gap-3">
+              <div className="flex justify-end gap-3 pt-3 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => setIsItemModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold"
+                  className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-zinc-300 font-bold text-xs cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-extrabold text-xs"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-cyan-400 to-teal-400 text-slate-950 font-black text-xs uppercase tracking-wider shadow cursor-pointer hover:scale-105 transition-all"
                 >
-                  Save Activity
+                  {editingItemId ? "Save Changes" : "Add to Itinerary"}
                 </button>
               </div>
             </form>
@@ -469,8 +641,8 @@ export default function TripBuilderPage() {
         isOpen={isAIModalOpen}
         onClose={() => setIsAIModalOpen(false)}
         onSuccess={() => {
+          addToast("AI itinerary generated successfully!", "success");
           loadTripData();
-          addToast("AI Itinerary Generated Successfully!", "success");
         }}
       />
     </div>
