@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { apiClient } from "../api/client";
+import { tripsAPI, stopsAPI, itemsAPI } from "../services/api";
 
 export default function TripDetailModal({ tripId, onClose }) {
   const [tripData, setTripData] = useState(null);
@@ -27,8 +27,8 @@ export default function TripDetailModal({ tripId, onClose }) {
     setLoading(true);
     setError("");
     try {
-      const res = await apiClient.get(`/trips/${tripId}/full`);
-      setTripData(res.trip);
+      const res = await tripsAPI.getFull(tripId);
+      setTripData(res.trip || res);
     } catch (err) {
       setError(err.message || "Failed to load trip details");
     } finally {
@@ -45,7 +45,7 @@ export default function TripDetailModal({ tripId, onClose }) {
     setSubmittingStop(true);
     try {
       const orderIndex = (tripData?.stops?.length || 0) + 1;
-      await apiClient.post(`/trips/${tripId}/stops`, {
+      await stopsAPI.add(tripId, {
         city_id: parseInt(cityId, 10),
         order_index: orderIndex,
         start_date: stopStartDate,
@@ -65,7 +65,7 @@ export default function TripDetailModal({ tripId, onClose }) {
   const handleDeleteStop = async (stopId) => {
     if (!window.confirm("Are you sure you want to delete this city stop?")) return;
     try {
-      await apiClient.del(`/stops/${stopId}`);
+      await stopsAPI.delete(stopId);
       fetchFullTrip();
     } catch (err) {
       alert(err.message || "Failed to delete stop");
@@ -76,7 +76,7 @@ export default function TripDetailModal({ tripId, onClose }) {
     e.preventDefault();
     setSubmittingItem(true);
     try {
-      await apiClient.post(`/stops/${stopId}/items`, {
+      await itemsAPI.add(stopId, {
         category: itemCategory,
         custom_name: customName || "New Activity",
         cost: parseFloat(itemCost) || 0,
@@ -98,7 +98,7 @@ export default function TripDetailModal({ tripId, onClose }) {
 
   const handleDeleteItem = async (itemId) => {
     try {
-      await apiClient.del(`/items/${itemId}`);
+      await itemsAPI.delete(itemId);
       fetchFullTrip();
     } catch (err) {
       alert(err.message || "Failed to delete item");

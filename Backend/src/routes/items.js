@@ -52,7 +52,6 @@ router.post('/', authMiddleware, async (req, res) => {
     emitTripEvent(tripId, 'item:created', { item: newItem, stopId });
 
     res.status(201).json({ item: newItem });
-    res.status(201).json({ item: result.rows[0] });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: error.errors } });

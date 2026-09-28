@@ -22,15 +22,11 @@ export function AuthProvider({ children }) {
           localStorage.setItem("globetrotter_user", JSON.stringify(data.user));
         })
         .catch(() => {
-          // Fallback demo user if API isn't responding
-          const fallbackUser = {
-            id: "user_demo_123",
-            name: "Alex Trotter",
-            email: "alex@globetrotter.io",
-            avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex",
-          };
-          setUser(fallbackUser);
-          localStorage.setItem("globetrotter_user", JSON.stringify(fallbackUser));
+          // Token is invalid/expired
+          setToken(null);
+          setUser(null);
+          localStorage.removeItem("globetrotter_token");
+          localStorage.removeItem("globetrotter_user");
         });
     }
   }, [token, user]);
@@ -46,20 +42,8 @@ export function AuthProvider({ children }) {
       addToast("Successfully logged in!", "success");
       return data;
     } catch (err) {
-      console.warn("API Login failed, using demo session:", err.message);
-      const demoToken = "demo_jwt_token_123";
-      const demoUser = {
-        id: "user_demo_123",
-        name: email.split("@")[0] || "Demo User",
-        email: email,
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${email}`,
-      };
-      setToken(demoToken);
-      setUser(demoUser);
-      localStorage.setItem("globetrotter_token", demoToken);
-      localStorage.setItem("globetrotter_user", JSON.stringify(demoUser));
-      addToast("Logged in with Demo Session!", "info");
-      return { token: demoToken, user: demoUser };
+      addToast(err.response?.data?.error?.message || err.message || "Login failed", "error");
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -68,23 +52,26 @@ export function AuthProvider({ children }) {
   const loginWithGoogle = async (googleProfile) => {
     setLoading(true);
     try {
-      const gUser = {
-        id: googleProfile?.id || "google_user_999",
-        name: googleProfile?.name || "Alex Rivera",
-        email: googleProfile?.email || "alex.rivera.google@gmail.com",
-        username: "@alex_google",
-        avatar:
-          googleProfile?.avatar ||
-          "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
-        provider: "Google Account",
-      };
-      const gToken = "google_oauth_jwt_token_999";
-      setToken(gToken);
-      setUser(gUser);
-      localStorage.setItem("globetrotter_token", gToken);
-      localStorage.setItem("globetrotter_user", JSON.stringify(gUser));
+      const googlePassword = `google_oauth_${googleProfile.sub || googleProfile.id || googleProfile.email}`;
+      let data;
+      try {
+        data = await authAPI.login({ email: googleProfile.email, password: googlePassword });
+      } catch {
+        data = await authAPI.signup({
+          name: googleProfile.name || googleProfile.email.split('@')[0],
+          email: googleProfile.email,
+          password: googlePassword,
+        });
+      }
+      setToken(data.token);
+      setUser(data.user);
+      localStorage.setItem("globetrotter_token", data.token);
+      localStorage.setItem("globetrotter_user", JSON.stringify(data.user));
       addToast("Logged in with Google Account!", "success");
-      return { token: gToken, user: gUser };
+      return data;
+    } catch (err) {
+      addToast(err.response?.data?.error?.message || err.message || "Google login failed", "error");
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -101,23 +88,19 @@ export function AuthProvider({ children }) {
       addToast("Account created successfully!", "success");
       return data;
     } catch (err) {
-      console.warn("API Signup failed, using demo session:", err.message);
-      const demoToken = "demo_jwt_token_123";
-      const demoUser = {
-        id: "user_demo_123",
-        name: fullName || "New Explorer",
-        email: email,
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${fullName}`,
-      };
-      setToken(demoToken);
-      setUser(demoUser);
-      localStorage.setItem("globetrotter_token", demoToken);
-      localStorage.setItem("globetrotter_user", JSON.stringify(demoUser));
-      addToast("Account created with Demo Session!", "info");
-      return { token: demoToken, user: demoUser };
+      addToast(err.response?.data?.error?.message || err.message || "Signup failed", "error");
+      throw err;
     } finally {
       setLoading(false);
     }
+  };
+
+  const updateUser = (updatedFields) => {
+    setUser((prev) => {
+      const nextUser = { ...prev, ...updatedFields };
+      localStorage.setItem("globetrotter_user", JSON.stringify(nextUser));
+      return nextUser;
+    });
   };
 
   const logout = () => {
@@ -129,7 +112,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, loginWithGoogle, signup, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, loginWithGoogle, signup, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

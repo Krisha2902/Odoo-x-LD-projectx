@@ -1,25 +1,54 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowRight, ChevronLeft, ChevronRight, Clock3, MapPin, Plus, Sparkles } from "lucide-react";
 import PlaneCursor from "../../components/PlaneCursor";
+import { tripsAPI } from "../../services/api";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const TRIP_DAYS = { 10: "Kyoto", 11: "Kyoto", 12: "Kyoto", 13: "Osaka", 14: "Osaka", 15: "Osaka", 16: "Tokyo", 17: "Tokyo", 18: "Tokyo", 19: "Tokyo", 20: "Tokyo" };
-const EVENTS = {
-  10: [{ time: "10:00", title: "Arrive in Kyoto", detail: "Hotel check-in" }],
-  13: [{ time: "09:30", title: "Bullet train to Osaka", detail: "Kyoto Station" }],
-  16: [{ time: "09:00", title: "Tsukiji Outer Market", detail: "Food walk" }, { time: "13:30", title: "TeamLab Planets", detail: "Immersive art" }],
-  17: [{ time: "11:00", title: "Asakusa & Senso-ji", detail: "City wandering" }],
-  20: [{ time: "18:00", title: "Flight home", detail: "Haneda Airport" }],
-};
 
 function Calendar() {
-  const [month, setMonth] = useState(5);
-  const [year, setYear] = useState(2025);
-  const [selectedDay, setSelectedDay] = useState(16);
+  const currentDate = new Date();
+  const [month, setMonth] = useState(currentDate.getMonth());
+  const [year, setYear] = useState(currentDate.getFullYear());
+  const [selectedDay, setSelectedDay] = useState(currentDate.getDate());
+  const [trips, setTrips] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    tripsAPI
+      .getAll()
+      .then((data) => {
+        setTrips(data.trips || data || []);
+      })
+      .catch((err) => {
+        console.warn("Failed to fetch trips for calendar:", err.message);
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const startDay = new Date(year, month, 1).getDay();
   const cells = [...Array(startDay).fill(null), ...Array.from({ length: daysInMonth }, (_, index) => index + 1)];
+
+  // Map trips to specific calendar days
+  const tripDaysMap = {};
+  const eventsMap = {};
+
+  trips.forEach((t) => {
+    if (t.start_date || t.startDate) {
+      const d = new Date(t.start_date || t.startDate);
+      if (d.getMonth() === month && d.getFullYear() === year) {
+        const dayNum = d.getDate();
+        tripDaysMap[dayNum] = t.title;
+        if (!eventsMap[dayNum]) eventsMap[dayNum] = [];
+        eventsMap[dayNum].push({
+          time: "09:00 AM",
+          title: t.title,
+          detail: t.description || `Trip start date (${t.start_date || t.startDate})`,
+        });
+      }
+    }
+  });
 
   const shiftMonth = (amount) => {
     const next = new Date(year, month + amount, 1);
@@ -66,8 +95,8 @@ function Calendar() {
             <div className="mt-8 grid grid-cols-7 gap-1 text-center text-xs font-semibold text-white/40 sm:gap-2">
               {WEEKDAYS.map((day) => <div key={day} className="pb-2">{day}</div>)}
               {cells.map((day, index) => {
-                const isTripDay = day && month === 5 && year === 2025 && TRIP_DAYS[day];
-                const isSelected = day === selectedDay && isTripDay;
+                const isTripDay = day && tripDaysMap[day];
+                const isSelected = day === selectedDay;
                 return (
                   <button
                     key={`${day}-${index}`}
@@ -86,8 +115,8 @@ function Calendar() {
                     {day && <span>{day}</span>}
                     {isTripDay && !isSelected && <span className="mt-1 h-1.5 w-1.5 rounded-full bg-[#ffcf70]" />}
                     {isTripDay && (
-                      <span className={`mt-1 hidden text-[10px] sm:block ${isSelected ? "text-[#286962]" : "text-[#8af5d7]"}`}>
-                        {TRIP_DAYS[day]}
+                      <span className={`mt-1 hidden text-[10px] sm:block truncate max-w-[80px] ${isSelected ? "text-[#286962]" : "text-[#8af5d7]"}`}>
+                        {tripDaysMap[day]}
                       </span>
                     )}
                   </button>
@@ -103,15 +132,15 @@ function Calendar() {
 
           <aside className="rounded-[1.5rem] border border-[#2c5b57] bg-[#0c2829] p-6 text-white sm:p-8 shadow-xl">
             <p className="text-sm font-semibold uppercase tracking-[0.15em] text-[#8af5d7]">
-              {selectedDay ? `June ${selectedDay}` : "Choose a day"}
+              {selectedDay ? `${MONTHS[month]} ${selectedDay}` : "Choose a day"}
             </p>
             {selectedDay && (
               <>
-                <h2 className="mt-2 text-3xl font-semibold text-white">{TRIP_DAYS[selectedDay] || "A quiet day"}</h2>
-                <p className="mt-2 text-sm text-zinc-400">{EVENTS[selectedDay] ? "Your itinerary" : "Nothing scheduled yet"}</p>
+                <h2 className="mt-2 text-2xl font-semibold text-white">{tripDaysMap[selectedDay] || "No trip planned"}</h2>
+                <p className="mt-2 text-sm text-zinc-400">{eventsMap[selectedDay] ? "Scheduled itinerary" : "Free day"}</p>
                 <div className="mt-7 space-y-3">
-                  {(EVENTS[selectedDay] || []).map((event) => (
-                    <div className="flex gap-3 rounded-xl bg-[#174641]/80 border border-[#2c5b57] p-3 text-left" key={event.title}>
+                  {(eventsMap[selectedDay] || []).map((event, idx) => (
+                    <div className="flex gap-3 rounded-xl bg-[#174641]/80 border border-[#2c5b57] p-3 text-left" key={idx}>
                       <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[#8af5d7]" />
                       <div>
                         <p className="text-xs font-semibold text-[#8af5d7]">{event.time}</p>
@@ -121,9 +150,6 @@ function Calendar() {
                     </div>
                   ))}
                 </div>
-                <button className="mt-7 flex items-center gap-2 text-sm font-bold text-[#8af5d7] hover:text-white transition-colors cursor-pointer">
-                  Open day details <ArrowRight className="h-4 w-4" />
-                </button>
               </>
             )}
           </aside>
@@ -132,18 +158,18 @@ function Calendar() {
         <section className="mt-8 grid gap-4 sm:grid-cols-3">
           <div className="rounded-2xl border border-[#2c5b57] bg-[#0c2829] p-5">
             <MapPin className="h-5 w-5 text-[#8af5d7]" />
-            <p className="mt-5 text-2xl font-semibold text-white">11 days</p>
-            <p className="mt-1 text-sm text-white/50">Japan journey</p>
+            <p className="mt-5 text-2xl font-semibold text-white">{trips.length} trips</p>
+            <p className="mt-1 text-sm text-white/50">Total journeys</p>
           </div>
           <div className="rounded-2xl border border-[#2c5b57] bg-[#0c2829] p-5">
             <Clock3 className="h-5 w-5 text-[#ffcf70]" />
-            <p className="mt-5 text-2xl font-semibold text-white">5 plans</p>
+            <p className="mt-5 text-2xl font-semibold text-white">{Object.keys(eventsMap).length} events</p>
             <p className="mt-1 text-sm text-white/50">On your calendar</p>
           </div>
           <div className="rounded-2xl border border-[#2c5b57] bg-[#0c2829] p-5">
             <Sparkles className="h-5 w-5 text-[#8af5d7]" />
-            <p className="mt-5 text-2xl font-semibold text-white">1 trip</p>
-            <p className="mt-1 text-sm text-white/50">Making memories</p>
+            <p className="mt-5 text-2xl font-semibold text-white">{MONTHS[month]}</p>
+            <p className="mt-1 text-sm text-white/50">Active view</p>
           </div>
         </section>
       </div>

@@ -37,4 +37,14 @@ router.get('/cities/:id/activities', async (req, res) => {
   }
 });
 
+// GET /user/saved-places
+router.get('/user/saved-places', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM cities LIMIT 6');
+    res.json({ places: result.rows });
+  } catch (error) {
+    res.status(500).json({ error: { code: 'SERVER_ERROR', message: error.message } });
+  }
+});
+
 module.exports = router;

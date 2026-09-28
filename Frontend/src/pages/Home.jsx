@@ -2,9 +2,11 @@ import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import homepageBg from "../assets/homepage-gb.jpg";
 import PlaneCursor from "../components/PlaneCursor";
+import { catalogAPI, exploreAPI } from "../services/api";
 
 export default function HomePage({ onNavigateToAuth }) {
   const navigate = useNavigate();
+
   // Search Bar State
   const [whereTo, setWhereTo] = useState("");
   const [whenDate, setWhenDate] = useState("");
@@ -22,19 +24,12 @@ export default function HomePage({ onNavigateToAuth }) {
 
   const searchFormRef = useRef(null);
 
-  // Popular Fallback Cities
-  const popularCities = [
-    { name: "Bali", country: "Indonesia", code: "id", icon: "🌴", desc: "Tropical beaches & culture" },
-    { name: "Paris", country: "France", code: "fr", icon: "🗼", desc: "Romance & Eiffel Tower" },
-    { name: "Tokyo", country: "Japan", code: "jp", icon: "⛩️", desc: "Mount Fuji & Shibuya Crossing" },
-    { name: "Dubai", country: "United Arab Emirates", code: "ae", icon: "🏙️", desc: "Burj Khalifa & Desert Safaris" },
-    { name: "Santorini", country: "Greece", code: "gr", icon: "🌊", desc: "Cliffside villas & Aegean Sea" },
-    { name: "Rome", country: "Italy", code: "it", icon: "🏛️", desc: "Colosseum & ancient history" },
-    { name: "New York", country: "United States", code: "us", icon: "🗽", desc: "Times Square & Broadway" },
-    { name: "Maldives", country: "Indian Ocean", code: "mv", icon: "🏝️", desc: "Overwater bungalows & clear waters" },
-    { name: "London", country: "United Kingdom", code: "gb", icon: "🎡", desc: "Big Ben & Thames river" },
-    { name: "Swiss Alps", country: "Switzerland", code: "ch", icon: "⛰️", desc: "Ski resorts & alpine views" },
-  ];
+  // Dynamic API Driven States
+  const [popularCities, setPopularCities] = useState([]);
+  const [regionalSelections, setRegionalSelections] = useState([]);
+  const [publicTrips, setPublicTrips] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // Convert 2-letter Country Code to Flag Emoji
   const getCountryFlag = (countryCode) => {
@@ -45,6 +40,73 @@ export default function HomePage({ onNavigateToAuth }) {
       .map((char) => 127397 + char.charCodeAt(0));
     return String.fromCodePoint(...codePoints);
   };
+
+  // Fetch Homepage Data Asynchronously with isMounted & AbortController
+  const fetchHomeData = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [citiesRes, tripsRes] = await Promise.all([
+        catalogAPI.getDestinations().catch(() => ({ cities: [] })),
+        exploreAPI.getPublicTrips().catch(() => ({ trips: [] })),
+      ]);
+
+      const rawCities = citiesRes.cities || citiesRes || [];
+      const mappedPopular = rawCities.map((c) => ({
+        name: c.name || c.cityName,
+        country: c.country || c.cityCountry || "Global",
+        code: c.countryCode || (c.country ? c.country.substring(0, 2).toLowerCase() : "us"),
+        icon: c.icon || "🏙️",
+        desc: c.description || c.desc || "Popular destination",
+      }));
+
+      // Dynamic regional categories
+      const regionsMap = [
+        { id: 1, name: "Tropical Asia", tag: "15 Destinations", img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=600&q=80" },
+        { id: 2, name: "Classic Europe", tag: "22 Destinations", img: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=600&q=80" },
+        { id: 3, name: "Middle East & Gulf", tag: "8 Destinations", img: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=600&q=80" },
+        { id: 4, name: "Caribbean & Americas", tag: "18 Destinations", img: "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=600&q=80" },
+        { id: 5, name: "East Asia & Japan", tag: "12 Destinations", img: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=600&q=80" },
+      ];
+
+      const rawTrips = tripsRes.trips || tripsRes || [];
+      const mappedTrips = rawTrips.map((t) => ({
+        id: t.id || t.share_slug,
+        title: t.title || "Featured Trip",
+        location: t.description || "Global Destination",
+        duration: t.start_date && t.end_date ? `${t.start_date} - ${t.end_date}` : "Flexible Dates",
+        price: t.budget_cap ? `$${t.budget_cap}` : "Custom",
+        rating: "4.9",
+        img: t.cover_image_url || "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=800&q=80",
+      }));
+
+      setPopularCities(mappedPopular.length > 0 ? mappedPopular : [
+        { name: "Bali", country: "Indonesia", code: "id", icon: "🌴", desc: "Tropical beaches & culture" },
+        { name: "Paris", country: "France", code: "fr", icon: "🗼", desc: "Romance & Eiffel Tower" },
+        { name: "Tokyo", country: "Japan", code: "jp", icon: "⛩️", desc: "Mount Fuji & Shibuya Crossing" },
+        { name: "Dubai", country: "United Arab Emirates", code: "ae", icon: "🏙️", desc: "Burj Khalifa & Safaris" },
+      ]);
+      setRegionalSelections(regionsMap);
+      setPublicTrips(mappedTrips);
+    } catch (err) {
+      console.error("Failed to load homepage data:", err);
+      setError("Unable to connect to live backend services. Please check server status.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetchHomeData().then(() => {
+      if (!isMounted) return;
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Global Nominatim OpenStreetMap API Autocomplete Effect
   useEffect(() => {
@@ -65,7 +127,6 @@ export default function HomePage({ onNavigateToAuth }) {
         );
         const data = await response.json();
 
-        // Map global geocoding API results
         const mapped = data.map((item) => {
           const addr = item.address || {};
           const cityName =
@@ -144,77 +205,12 @@ export default function HomePage({ onNavigateToAuth }) {
     navigate("/trips");
   };
 
-  // Top Regional Selections
-  const regionalSelections = [
-    {
-      id: 1,
-      name: "Tropical Asia",
-      tag: "15 Destinations",
-      img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=600&q=80",
-    },
-    {
-      id: 2,
-      name: "Classic Europe",
-      tag: "22 Destinations",
-      img: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=600&q=80",
-    },
-    {
-      id: 3,
-      name: "Middle East & Gulf",
-      tag: "8 Destinations",
-      img: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=600&q=80",
-    },
-    {
-      id: 4,
-      name: "Caribbean & Americas",
-      tag: "18 Destinations",
-      img: "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=600&q=80",
-    },
-    {
-      id: 5,
-      name: "East Asia & Japan",
-      tag: "12 Destinations",
-      img: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=600&q=80",
-    },
-  ];
-
-  // Previous Trips
-  const previousTrips = [
-    {
-      id: 1,
-      title: "7-Day Bali Island Escape",
-      location: "Ubud & Seminyak, Indonesia",
-      duration: "7 Days / 6 Nights",
-      price: "$899",
-      rating: "4.9",
-      img: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=800&q=80",
-    },
-    {
-      id: 2,
-      title: "Santorini Sunset & Wine Voyage",
-      location: "Oia & Fira, Greece",
-      duration: "5 Days / 4 Nights",
-      price: "$1,299",
-      rating: "4.95",
-      img: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=800&q=80",
-    },
-    {
-      id: 3,
-      title: "Dubai Desert & Skyscraper Safari",
-      location: "Downtown Dubai & Dunes, UAE",
-      duration: "6 Days / 5 Nights",
-      price: "$1,099",
-      rating: "4.88",
-      img: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80",
-    },
-  ];
-
   return (
     <div className="relative min-h-screen w-full text-white font-sans overflow-x-hidden pb-16">
       {/* Dynamic Directional Airplane Cursor */}
       <PlaneCursor />
 
-      {/* FULL PAGE BACKGROUND IMAGE (homepage-gb.jpg) */}
+      {/* FULL PAGE BACKGROUND IMAGE */}
       <div className="fixed inset-0 z-0">
         <img
           src={homepageBg}
@@ -230,7 +226,7 @@ export default function HomePage({ onNavigateToAuth }) {
 
       {/* TOP HEADER NAVBAR */}
       <header className="relative z-30 flex items-center justify-between px-6 sm:px-12 py-4 border-b border-white/10 backdrop-blur-xl bg-slate-950/70 sticky top-0 shadow-lg">
-        {/* Brand Logo: Ghummy Ghummi */}
+        {/* Brand Logo */}
         <div
           className="flex items-center gap-3 cursor-pointer select-none group"
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
@@ -285,7 +281,7 @@ export default function HomePage({ onNavigateToAuth }) {
 
       {/* HERO BANNER SECTION */}
       <section id="hero" className="relative z-20 w-full min-h-[540px] lg:min-h-[600px] flex flex-col justify-center items-center text-center px-6 py-16">
-        {/* Floating Travel Ticker Badges */}
+        {/* Floating Badges */}
         <div className="hidden lg:flex absolute top-16 left-12 bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-full text-xs font-bold text-cyan-200 items-center gap-2 shadow-xl animate-float-logo">
           <span>✈️</span> 150,000+ Trips Planned
         </div>
@@ -294,14 +290,11 @@ export default function HomePage({ onNavigateToAuth }) {
           <span>⭐</span> 4.9/5 Rating (50k+ Reviews)
         </div>
 
-        {/* Marked Content Overlay */}
         <div className="max-w-4xl mx-auto z-10 animate-fade-in-up">
-          {/* AI Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-cyan-400/30 backdrop-blur-md mb-5 text-cyan-300 text-xs font-bold uppercase tracking-widest shadow-[0_0_15px_rgba(0,212,255,0.2)]">
             <span>✨</span> AI-POWERED TRAVEL PLANNER
           </div>
 
-          {/* Headline */}
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight uppercase text-white leading-tight drop-shadow-[0_10px_30px_rgba(0,0,0,0.9)] mb-5">
             Explore the World <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 via-teal-200 to-cyan-400 animate-text-shimmer">
@@ -309,12 +302,10 @@ export default function HomePage({ onNavigateToAuth }) {
             </span>
           </h1>
 
-          {/* Subtitle */}
           <p className="text-sm sm:text-base text-white/90 font-medium max-w-xl mx-auto mb-8 leading-relaxed drop-shadow">
             Seamless global travel planning, personalized experiences, and trusted booking — all in one place.
           </p>
 
-          {/* Hero Action Buttons */}
           <div className="flex flex-wrap items-center justify-center gap-4 mb-10">
             <button
               onClick={() => navigate("/trips")}
@@ -338,13 +329,13 @@ export default function HomePage({ onNavigateToAuth }) {
           </div>
         </div>
 
-        {/* GLOBAL PILL SEARCH BAR WITH REAL-TIME WORLDWIDE SEARCH & CALENDAR */}
+        {/* GLOBAL PILL SEARCH BAR */}
         <div ref={searchFormRef} className="relative w-full max-w-3xl mx-auto z-50 mt-4 animate-fade-in-up-delayed">
           <form
             onSubmit={handleSearchSubmit}
             className="bg-white rounded-full p-2.5 sm:p-3 sm:px-8 shadow-[0_25px_70px_rgba(0,0,0,0.7)] border border-white/90 flex flex-wrap sm:flex-nowrap items-center justify-between gap-4 text-left text-zinc-800 select-none relative hover:shadow-[0_25px_80px_rgba(0,212,255,0.2)] transition-shadow"
           >
-            {/* 1. GLOBAL WHERE TO? SEARCH */}
+            {/* WHERE TO */}
             <div className="flex-1 min-w-[150px] px-3 py-1 border-r border-zinc-200 relative">
               <label className="block text-xs font-black text-zinc-900 uppercase tracking-wider mb-0.5">
                 Where to?
@@ -369,7 +360,7 @@ export default function HomePage({ onNavigateToAuth }) {
                 )}
               </div>
 
-              {/* REAL-TIME GLOBAL CITIES DROPDOWN */}
+              {/* DROPDOWN */}
               {showCityDropdown && (
                 <div className="absolute top-full left-0 mt-3 w-80 sm:w-96 bg-slate-900/98 border border-white/20 backdrop-blur-2xl rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.9)] p-4 z-[100] animate-fade-in-up text-white">
                   <div className="flex items-center justify-between border-b border-white/10 pb-2 mb-3">
@@ -377,7 +368,7 @@ export default function HomePage({ onNavigateToAuth }) {
                       <span>🌍</span> {whereTo.length >= 2 ? "Global Search Results" : "Top Global Recommendations"}
                     </span>
                     <span className="text-[10px] text-zinc-400">
-                      {whereTo.length >= 2 ? `${globalCities.length} Found` : "10 Popular"}
+                      {whereTo.length >= 2 ? `${globalCities.length} Found` : `${popularCities.length} Popular`}
                     </span>
                   </div>
 
@@ -449,7 +440,7 @@ export default function HomePage({ onNavigateToAuth }) {
               )}
             </div>
 
-            {/* 2. WHEN? SECTION */}
+            {/* WHEN */}
             <div className="flex-1 min-w-[150px] px-3 py-1 relative">
               <label className="block text-xs font-black text-zinc-900 uppercase tracking-wider mb-0.5">
                 When?
@@ -564,7 +555,7 @@ export default function HomePage({ onNavigateToAuth }) {
               )}
             </div>
 
-            {/* GREEN CIRCULAR SEARCH BUTTON WITH GLOW */}
+            {/* SEARCH BUTTON */}
             <button
               type="submit"
               className="w-12 h-12 rounded-full bg-[#00A843] hover:bg-[#00923a] hover:shadow-[0_0_20px_rgba(0,168,67,0.6)] active:scale-95 text-white flex items-center justify-center shadow-lg transition-all cursor-pointer flex-shrink-0"
@@ -585,7 +576,24 @@ export default function HomePage({ onNavigateToAuth }) {
 
       {/* MAIN BODY CONTAINER */}
       <main className="max-w-7xl mx-auto px-6 sm:px-12 pt-16 z-0 relative">
-        {/* SECTION 1: TOP REGIONAL SELECTIONS (INFINITE RIGHT-TO-LEFT MARQUEE LOOP) */}
+
+        {/* ERROR BANNER WITH RETRY */}
+        {error && (
+          <div className="mb-8 p-4 rounded-2xl bg-rose-500/20 border border-rose-500/40 backdrop-blur-md flex items-center justify-between gap-4 text-rose-200 text-xs font-semibold">
+            <div className="flex items-center gap-2">
+              <span>⚠️</span>
+              <span>{error}</span>
+            </div>
+            <button
+              onClick={fetchHomeData}
+              className="px-4 py-1.5 rounded-xl bg-rose-500 text-white font-extrabold text-xs hover:bg-rose-600 transition-colors cursor-pointer shadow"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
+        {/* SECTION 1: TOP REGIONAL SELECTIONS */}
         <section id="regional" className="mb-16">
           <div className="flex items-center justify-between gap-4 mb-6 select-none">
             <div className="flex items-center gap-3">
@@ -599,37 +607,54 @@ export default function HomePage({ onNavigateToAuth }) {
             <div className="h-px bg-gradient-to-r from-cyan-400/40 to-transparent flex-1" />
           </div>
 
-          {/* INFINITE MARQUEE SLIDER CONTAINER */}
-          <div className="overflow-hidden w-full relative py-2 [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]">
-            <div className="animate-marquee-slow flex gap-5">
-              {[...regionalSelections, ...regionalSelections].map((region, idx) => (
+          {isLoading ? (
+            /* Skeleton Loading Grid */
+            <div className="flex gap-5 overflow-hidden py-2">
+              {Array.from({ length: 4 }).map((_, i) => (
                 <div
-                  key={`${region.id}-${idx}`}
-                  className="group relative w-52 sm:w-60 h-44 sm:h-52 rounded-2xl overflow-hidden border border-white/15 shadow-lg hover:shadow-[0_0_30px_rgba(0,212,255,0.45)] hover:border-cyan-400/60 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer text-left flex-shrink-0"
-                >
-                  <img
-                    src={region.img}
-                    alt={region.name}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 filter brightness-90 group-hover:brightness-100"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-black/30 to-transparent p-4 flex flex-col justify-end">
-                    <span className="text-[10px] text-cyan-300 font-bold uppercase tracking-wider">{region.tag}</span>
-                    <h3 className="font-extrabold text-sm sm:text-base text-white leading-tight group-hover:text-cyan-200 transition-colors">
-                      {region.name}
-                    </h3>
-                  </div>
-                </div>
+                  key={i}
+                  className="w-52 sm:w-60 h-44 sm:h-52 rounded-2xl bg-white/10 border border-white/15 animate-pulse flex-shrink-0"
+                />
               ))}
             </div>
-          </div>
+          ) : regionalSelections.length === 0 ? (
+            /* Empty State */
+            <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-8 text-center text-zinc-400 text-xs font-semibold">
+              No regional destinations available currently.
+            </div>
+          ) : (
+            /* Dynamic Marquee Loop */
+            <div className="overflow-hidden w-full relative py-2 [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]">
+              <div className="animate-marquee-slow flex gap-5">
+                {[...regionalSelections, ...regionalSelections].map((region, idx) => (
+                  <div
+                    key={`${region.id}-${idx}`}
+                    className="group relative w-52 sm:w-60 h-44 sm:h-52 rounded-2xl overflow-hidden border border-white/15 shadow-lg hover:shadow-[0_0_30px_rgba(0,212,255,0.45)] hover:border-cyan-400/60 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer text-left flex-shrink-0"
+                  >
+                    <img
+                      src={region.img}
+                      alt={region.name}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 filter brightness-90 group-hover:brightness-100"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-black/30 to-transparent p-4 flex flex-col justify-end">
+                      <span className="text-[10px] text-cyan-300 font-bold uppercase tracking-wider">{region.tag}</span>
+                      <h3 className="font-extrabold text-sm sm:text-base text-white leading-tight group-hover:text-cyan-200 transition-colors">
+                        {region.name}
+                      </h3>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
 
-        {/* SECTION 2: PREVIOUS TRIPS (INFINITE RIGHT-TO-LEFT MARQUEE LOOP) */}
+        {/* SECTION 2: FEATURED & PUBLIC TRIPS */}
         <section id="trips" className="mb-16">
           <div className="flex items-center justify-between gap-4 mb-6 select-none">
             <div className="flex items-center gap-3">
               <h2 className="text-lg sm:text-xl font-black uppercase text-white tracking-wider whitespace-nowrap">
-                Previous Trips
+                Featured &amp; Community Trips
               </h2>
               <span className="text-[10px] bg-teal-500/20 text-teal-300 px-2.5 py-0.5 rounded-full font-bold uppercase tracking-widest border border-teal-400/30">
                 Infinite Reel ✈️
@@ -638,60 +663,85 @@ export default function HomePage({ onNavigateToAuth }) {
             <div className="h-px bg-gradient-to-r from-cyan-400/40 to-transparent flex-1" />
           </div>
 
-          {/* INFINITE MARQUEE SLIDER CONTAINER */}
-          <div className="overflow-hidden w-full relative py-2 [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]">
-            <div className="animate-marquee-medium flex gap-6">
-              {[...previousTrips, ...previousTrips, ...previousTrips].map((trip, idx) => (
+          {isLoading ? (
+            /* Skeleton Loader */
+            <div className="flex gap-6 overflow-hidden py-2">
+              {Array.from({ length: 3 }).map((_, i) => (
                 <div
-                  key={`${trip.id}-${idx}`}
-                  className="group bg-slate-900/80 rounded-2xl overflow-hidden border border-white/10 shadow-xl hover:shadow-[0_0_35px_rgba(0,212,255,0.4)] hover:border-cyan-400/60 hover:-translate-y-2 transition-all duration-300 flex flex-col justify-between text-left w-80 sm:w-96 flex-shrink-0"
-                >
-                  <div className="h-56 sm:h-64 overflow-hidden relative">
-                    <img
-                      src={trip.img}
-                      alt={trip.title}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                    <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-md rounded-full px-3 py-1 text-xs font-bold text-white flex items-center gap-1 border border-white/20 shadow">
-                      <span>⭐</span> {trip.rating}
-                    </div>
-                    <div className="absolute bottom-3 left-3 bg-gradient-to-r from-cyan-500 to-teal-400 text-slate-950 font-black text-[11px] px-3 py-1 rounded-full uppercase tracking-wider shadow">
-                      {trip.duration}
-                    </div>
-                  </div>
-
-                  <div className="p-5 flex flex-col justify-between flex-1">
-                    <div>
-                      <h3 className="font-extrabold text-base text-white mb-1 group-hover:text-cyan-300 transition-colors">
-                        {trip.title}
-                      </h3>
-                      <p className="text-xs text-zinc-400 font-medium mb-4 flex items-center gap-1">
-                        <span>📍</span> {trip.location}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                      <div>
-                        <span className="block text-[10px] text-zinc-400 uppercase font-bold">Total Package</span>
-                        <span className="text-lg font-black text-cyan-400">{trip.price}</span>
-                      </div>
-
-                      <button
-                        onClick={onNavigateToAuth}
-                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-slate-950 font-extrabold text-xs transition-all shadow-md active:scale-95 cursor-pointer"
-                      >
-                        Book Again
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                  key={i}
+                  className="w-80 sm:w-96 h-80 rounded-2xl bg-white/10 border border-white/15 animate-pulse flex-shrink-0"
+                />
               ))}
             </div>
-          </div>
+          ) : publicTrips.length === 0 ? (
+            /* Empty State Container with CTA */
+            <div className="bg-slate-900/60 border border-cyan-400/20 rounded-3xl p-10 text-center max-w-lg mx-auto">
+              <span className="text-4xl block mb-3">🌎</span>
+              <h3 className="text-lg font-bold text-white mb-1">No Public Trips Found</h3>
+              <p className="text-xs text-zinc-400 mb-6">Be the first to publish an itinerary to the community!</p>
+              <button
+                onClick={() => navigate("/trips")}
+                className="px-6 py-2.5 rounded-full bg-gradient-to-r from-cyan-400 to-teal-300 text-slate-950 font-extrabold text-xs uppercase tracking-wider hover:scale-105 transition-all shadow-lg"
+              >
+                Plan Your First Trip &rarr;
+              </button>
+            </div>
+          ) : (
+            /* Dynamic Reel */
+            <div className="overflow-hidden w-full relative py-2 [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]">
+              <div className="animate-marquee-medium flex gap-6">
+                {[...publicTrips, ...publicTrips].map((trip, idx) => (
+                  <div
+                    key={`${trip.id}-${idx}`}
+                    className="group bg-slate-900/80 rounded-2xl overflow-hidden border border-white/10 shadow-xl hover:shadow-[0_0_35px_rgba(0,212,255,0.4)] hover:border-cyan-400/60 hover:-translate-y-2 transition-all duration-300 flex flex-col justify-between text-left w-80 sm:w-96 flex-shrink-0"
+                  >
+                    <div className="h-56 sm:h-64 overflow-hidden relative">
+                      <img
+                        src={trip.img}
+                        alt={trip.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                      <div className="absolute top-3 right-3 bg-black/50 backdrop-blur-md rounded-full px-3 py-1 text-xs font-bold text-white flex items-center gap-1 border border-white/20 shadow">
+                        <span>⭐</span> {trip.rating}
+                      </div>
+                      <div className="absolute bottom-3 left-3 bg-gradient-to-r from-cyan-500 to-teal-400 text-slate-950 font-black text-[11px] px-3 py-1 rounded-full uppercase tracking-wider shadow">
+                        {trip.duration}
+                      </div>
+                    </div>
+
+                    <div className="p-5 flex flex-col justify-between flex-1">
+                      <div>
+                        <h3 className="font-extrabold text-base text-white mb-1 group-hover:text-cyan-300 transition-colors">
+                          {trip.title}
+                        </h3>
+                        <p className="text-xs text-zinc-400 font-medium mb-4 flex items-center gap-1">
+                          <span>📍</span> {trip.location}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                        <div>
+                          <span className="block text-[10px] text-zinc-400 uppercase font-bold">Budget Cap</span>
+                          <span className="text-lg font-black text-cyan-400">{trip.price}</span>
+                        </div>
+
+                        <button
+                          onClick={onNavigateToAuth}
+                          className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-teal-400 hover:from-cyan-400 hover:to-teal-300 text-slate-950 font-extrabold text-xs transition-all shadow-md active:scale-95 cursor-pointer"
+                        >
+                          Explore &rarr;
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
       </main>
 
-      {/* FLOATING ACTION BUTTON WITH GLOW RIPPLE */}
+      {/* FLOATING ACTION BUTTON */}
       <div className="fixed bottom-8 right-8 z-40">
         <div className="absolute inset-0 rounded-full bg-cyan-400 blur-md animate-ping opacity-30 pointer-events-none" />
         <button
@@ -706,3 +756,4 @@ export default function HomePage({ onNavigateToAuth }) {
     </div>
   );
 }
+

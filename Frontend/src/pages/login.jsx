@@ -3,13 +3,19 @@ import { useNavigate, useLocation } from "react-router-dom";
 import bgLogin from "../assets/bg-login.jpg";
 import PlaneCursor from "../components/PlaneCursor";
 import { useAuth } from "../context/AuthContext";
-import { apiClient, setToken } from "../api/client";
+import { authAPI } from "../services/api";
 
 export default function LoginPage({ onNavigateToHome, onAuthSuccess }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, signup, loginWithGoogle: loginWithGoogleContext } = useAuth();
+  const { user, token, login, signup } = useAuth();
   const [isSignUp, setIsSignUp] = useState(location.pathname === "/signup");
+
+  useEffect(() => {
+    if (token && user) {
+      navigate("/my-trips", { replace: true });
+    }
+  }, [token, user, navigate]);
 
   useEffect(() => {
     if (location.pathname === "/signup") {
@@ -77,27 +83,16 @@ export default function LoginPage({ onNavigateToHome, onAuthSuccess }) {
     setAuthError("");
     setLoading(true);
     try {
-      let data;
       const googlePassword = `google_oauth_${profile.sub || profile.id || profile.email}`;
       try {
-        data = await apiClient.post('/auth/login', {
-          email: profile.email,
-          password: googlePassword,
-        });
-      } catch (err) {
-        data = await apiClient.post('/auth/signup', {
-          name: profile.name || profile.email.split('@')[0],
-          email: profile.email,
-          password: googlePassword,
-        });
+        await login(profile.email, googlePassword);
+      } catch {
+        await signup(profile.name || profile.email.split('@')[0], profile.email, googlePassword);
       }
-      if (data?.token) setToken(data.token);
-      if (onAuthSuccess) {
-        onAuthSuccess(data.user, data.token);
-      }
+      navigate("/my-trips");
     } catch (err) {
       console.error("Google session auto-login error:", err);
-      // Even if backend signup fails, keep profile set
+      setAuthError(err.message || "Google login failed.");
     } finally {
       setLoading(false);
       setGoogleLoading(false);
@@ -215,20 +210,10 @@ export default function LoginPage({ onNavigateToHome, onAuthSuccess }) {
     setAuthError("");
     setLoading(true);
     try {
-      if (apiClient) {
-        const data = await apiClient.post('/auth/login', { email, password });
-        if (data?.token) setToken(data.token);
-        if (onAuthSuccess) onAuthSuccess(data.user, data.token);
-      }
-      if (login) await login(email, password);
+      await login(email, password);
       navigate("/my-trips");
     } catch (err) {
-      if (login) {
-        await login(email, password);
-        navigate("/my-trips");
-      } else {
-        setAuthError(err.message || "Login failed. Please check your credentials.");
-      }
+      setAuthError(err.message || "Login failed. Please check your credentials.");
     } finally {
       setLoading(false);
     }
@@ -243,7 +228,7 @@ export default function LoginPage({ onNavigateToHome, onAuthSuccess }) {
     setAuthError("");
     setLoading(true);
     try {
-      const data = await apiClient.post('/auth/send-otp', { email: signUpEmail });
+      const data = await authAPI.sendOtp(signUpEmail);
       setSignUpStep('OTP_VERIFY');
       setOtpTimer(60);
       setCanResendOtp(false);
@@ -252,11 +237,12 @@ export default function LoginPage({ onNavigateToHome, onAuthSuccess }) {
         setOtpCode(data.devOtp);
       }
     } catch (err) {
-      if (signup) {
+      // If OTP endpoint not available, fall back to direct signup
+      try {
         await signup(fullName, signUpEmail, signUpPassword);
         navigate("/my-trips");
-      } else {
-        setAuthError(err.message || "Failed to send OTP code.");
+      } catch (signupErr) {
+        setAuthError(signupErr.message || err.message || "Failed to send OTP code.");
       }
     } finally {
       setLoading(false);
@@ -272,23 +258,19 @@ export default function LoginPage({ onNavigateToHome, onAuthSuccess }) {
     setAuthError("");
     setLoading(true);
     try {
-      const data = await apiClient.post('/auth/verify-otp-and-signup', {
+      const data = await authAPI.verifyOtpAndSignUp({
         name: fullName,
         email: signUpEmail,
         password: signUpPassword,
         otp: otpCode,
       });
-      if (data?.token) setToken(data.token);
-      if (onAuthSuccess) onAuthSuccess(data.user, data.token);
-      if (signup) await signup(fullName, signUpEmail, signUpPassword);
+      if (data?.token) {
+        localStorage.setItem("globetrotter_token", data.token);
+        localStorage.setItem("globetrotter_user", JSON.stringify(data.user));
+      }
       navigate("/my-trips");
     } catch (err) {
-      if (signup) {
-        await signup(fullName, signUpEmail, signUpPassword);
-        navigate("/my-trips");
-      } else {
-        setAuthError(err.message || "OTP verification failed.");
-      }
+      setAuthError(err.message || "OTP verification failed.");
     } finally {
       setLoading(false);
     }
@@ -311,11 +293,11 @@ export default function LoginPage({ onNavigateToHome, onAuthSuccess }) {
       <img
         src={bgLogin}
         alt="Login Background"
-        className="absolute inset-0 w-full h-full object-cover -z-20 animate-slow-zoom"
+        className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none animate-slow-zoom"
       />
 
       {/* 2. Ambient Dark Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/30 to-black/60 -z-10" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/70 z-0 pointer-events-none" />
 
       {/* Ambient Floating Cyan/Aqua Glow Orbs for Glassmorphism */}
       <div className="absolute top-1/4 right-1/4 w-72 h-72 rounded-full bg-cyan-400/20 blur-3xl -z-10 animate-float-orb-1" />
@@ -419,21 +401,7 @@ export default function LoginPage({ onNavigateToHome, onAuthSuccess }) {
             {/* Google Login Button */}
             <button
               type="button"
-              onClick={async () => {
-                setGoogleLoading(true);
-                try {
-                  if (loginWithGoogleContext) {
-                    await loginWithGoogleContext({
-                      name: "Alex Rivera",
-                      email: "alex.rivera.google@gmail.com",
-                      avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80",
-                    });
-                  }
-                  navigate("/profile");
-                } finally {
-                  setGoogleLoading(false);
-                }
-              }}
+              onClick={loginWithGoogle}
               disabled={googleLoading}
               className="w-full flex items-center justify-center gap-3 bg-white text-zinc-700 border border-zinc-200 py-2.5 px-4 rounded-lg shadow-sm hover:bg-zinc-50 hover:border-zinc-300 hover:shadow active:scale-[0.98] transition-all text-xs font-semibold cursor-pointer disabled:opacity-50"
             >

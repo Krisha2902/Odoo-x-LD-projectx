@@ -19,7 +19,7 @@ export default function BudgetSummaryPanel({ items = [], budgetCap = 2000 }) {
   }, {});
 
   return (
-    <div className="bg-[#0D2626] border border-[#5AD9BC]/20 rounded-2xl p-4 flex flex-col h-full select-none text-left">
+    <div className="bg-[#0D2626] border border-[#5AD9BC]/20 rounded-2xl p-4 flex flex-col min-h-[580px] max-h-[720px] select-none text-left shadow-xl">
       <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
         <h3 className="font-extrabold text-sm text-white uppercase tracking-wider flex items-center gap-2">
           <span>💳</span> Live Budget Summary

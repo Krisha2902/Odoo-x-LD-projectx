@@ -3,8 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar/Navbar";
 import PlaneCursor from "../components/PlaneCursor";
 import VoteControl from "../components/VoteControl";
-import { apiClient } from "../api/client";
-import { tripsAPI, stopsAPI, itemsAPI } from "../services/api";
+import { tripsAPI, stopsAPI, itemsAPI, aiAPI } from "../services/api";
 
 // Known global landmark places database for instant high-accuracy fallback generation
 const CITY_LANDMARKS_DATABASE = {
@@ -117,7 +116,12 @@ export default function PlanTripPage() {
   const buildDynamicPlaces = (origin, dest, prefs, budgetVal) => {
     const destClean = dest.trim();
     const destKey = destClean.toLowerCase().split(",")[0].trim();
-    const knownPlaces = CITY_LANDMARKS_DATABASE[destKey] || CITY_LANDMARKS_DATABASE["amdavad"];
+    const knownPlaces = CITY_LANDMARKS_DATABASE[destKey] || [
+      { time: '09:30 AM', title: `${destClean} Historic Center & Landmark Exploration`, location: `${destClean} Old Town`, costRatio: 0.04, category: 'culture', duration: 150, notes: `Discover the top iconic sights and architectural landmarks of ${destClean}.` },
+      { time: '01:00 PM', title: `Traditional Regional Gastronomy & Market Dining`, location: `${destClean} Food Market`, costRatio: 0.05, category: 'food', duration: 90, notes: `Taste local specialties and regional delicacies of ${destClean}.` },
+      { time: '04:30 PM', title: `${destClean} Scenic Viewpoint & Promenade Walk`, location: `${destClean} City Viewpoint`, costRatio: 0.03, category: 'nature', duration: 120, notes: `Enjoy scenic panoramic skyline views across ${destClean}.` },
+      { time: '08:00 PM', title: `Evening Cultural Experience & Night Market`, location: `${destClean} Downtown`, costRatio: 0.05, category: 'landmark', duration: 120, notes: `Stroll through illuminated streets and evening cafes in ${destClean}.` },
+    ];
 
     const parsedBudget = Number(budgetVal) || 1500;
     const baseCost = Math.round(parsedBudget / 20);
@@ -220,63 +224,56 @@ export default function PlanTripPage() {
   const handleGenerate = async (e) => {
     e.preventDefault();
     setGenerating(true);
-    setErrorMsg("");
+    setErrorMsg('');
 
     try {
-      // Step 1: Create the trip record
-      const tripRes = await tripsAPI.create({
-        title: `${startingLocation} to ${destination} Expedition`,
-        start_date: startDate,
-        end_date: endDate,
-        budget_cap: Number(budget),
+      // 1. Call AI generation endpoint with the user's destination & preferences
+      const aiRes = await aiAPI.generateItinerary({
+        destination,
+        startingLocation,
+        startDate,
+        endDate,
+        budget: Number(budget),
+        travelers: Number(travelers),
+        preferences: selectedPreferences,
+        pace: selectedPreferences.includes('Adventure') ? 'packed' : 'relaxed',
       });
 
-      const tripId = tripRes?.trip?.id || tripRes?.id;
-      if (tripId) setCreatedTripId(tripId);
+      const items = aiRes?.days || aiRes?.itinerary || aiRes?.generated_items || aiRes?.items;
+      if (Array.isArray(items) && items.length > 0) {
+        setGeneratedItinerary(items);
+        setIsGenerated(true);
 
-      // Step 2: Add Origin & Destination stops using dynamic city_name
-      if (tripId) {
-        try {
-          await stopsAPI.add(tripId, {
-            city_name: startingLocation,
-            order_index: 0,
-            start_date: startDate,
-            end_date: startDate,
-          });
-
-          await stopsAPI.add(tripId, {
-            city_name: destination,
-            order_index: 1,
-            start_date: startDate,
-            end_date: endDate,
-          });
-        } catch (stopErr) {
-          console.warn("Stops creation notice:", stopErr.message);
-        }
-
-        // Step 3: Trigger Gemini AI Generation endpoint
-        try {
-          const aiRes = await apiClient.post(`/trips/${tripId}/generate`, {
-            interests: selectedPreferences,
-            pace: selectedPreferences.includes("Adventure") ? "packed" : "relaxed",
-            budgetTier: budget > 2500 ? "luxury" : budget > 1000 ? "moderate" : "budget",
-          });
-
-          const items = aiRes?.generated_items || aiRes?.items || aiRes;
-          if (Array.isArray(items) && items.length > 0) {
-            setGeneratedItinerary(items);
-            setIsGenerated(true);
-            setGenerating(false);
-            return;
+        // Optionally persist trip in backend if token is available
+        const token = localStorage.getItem('globetrotter_token');
+        if (token) {
+          try {
+            const tripRes = await tripsAPI.create({
+              title: `${startingLocation} to ${destination} Expedition`,
+              start_date: startDate,
+              end_date: endDate,
+              budget_cap: Number(budget),
+            });
+            const tripId = tripRes?.trip?.id || tripRes?.id;
+            if (tripId) {
+              setCreatedTripId(tripId);
+              await stopsAPI.add(tripId, {
+                city_name: destination,
+                order_index: 0,
+                start_date: startDate,
+                end_date: endDate,
+              });
+            }
+          } catch (tripErr) {
+            console.warn('Background trip sync notice:', tripErr.message);
           }
-        } catch (aiErr) {
-          console.warn("Backend AI generation fallback triggered:", aiErr.message);
         }
+        return;
       }
 
-      throw new Error("Using fallback procedural generator");
+      throw new Error('No items returned from AI service');
     } catch (err) {
-      console.warn("Using local procedural generation for UI rendering:", err.message);
+      console.warn('Using dynamic destination procedural generator:', err.message);
       const dynamicItinerary = buildDynamicPlaces(
         startingLocation,
         destination,
@@ -406,9 +403,7 @@ export default function PlanTripPage() {
   return (
     <div className="min-h-screen bg-[#071C1C] text-white font-sans overflow-x-hidden pb-16 select-none">
       <PlaneCursor />
-      <Navbar />
-
-      <main className="max-w-4xl mx-auto px-6 sm:px-12 pt-24 text-left">
+      <div className="max-w-4xl mx-auto px-6 sm:px-12 pt-24 text-left">
         {!isGenerated ? (
           <div className="bg-[#0D2626] border border-[#5AD9BC]/20 rounded-3xl p-8 shadow-2xl">
             <div className="border-b border-white/10 pb-4 mb-6">
@@ -605,7 +600,7 @@ export default function PlanTripPage() {
             </div>
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 }

@@ -8,7 +8,9 @@ import PlaneCursor from "../components/PlaneCursor";
 export default function DashboardPage() {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { addToast } = useToast();
 
   // New Trip Form State
@@ -20,58 +22,33 @@ export default function DashboardPage() {
 
   const fetchTrips = async () => {
     setLoading(true);
+    setError(null);
     try {
       const data = await tripsAPI.getAll();
       setTrips(data.trips || data || []);
     } catch (err) {
-      console.warn("API trips endpoint sparse, loading seed hackathon trips:", err);
-      const seedTrips = [
-        {
-          id: "trip_1",
-          title: "Ultimate Bali & Island Hopping",
-          startDate: "Oct 15, 2026",
-          endDate: "Oct 22, 2026",
-          coverImage: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=800&q=80",
-          budgetCap: 2500,
-          isPublic: true,
-          role: "owner",
-          slug: "bali-island-hopping",
-        },
-        {
-          id: "trip_2",
-          title: "Paris & Santorini Sunset Voyage",
-          startDate: "Nov 01, 2026",
-          endDate: "Nov 08, 2026",
-          coverImage: "https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=800&q=80",
-          budgetCap: 3200,
-          isPublic: true,
-          role: "conductor",
-          slug: "paris-santorini-voyage",
-        },
-        {
-          id: "trip_3",
-          title: "Dubai Desert & Tokyo Tech Expedition",
-          startDate: "Dec 10, 2026",
-          endDate: "Dec 20, 2026",
-          coverImage: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=800&q=80",
-          budgetCap: 4500,
-          isPublic: false,
-          role: "editor",
-          slug: "dubai-tokyo-expedition",
-        },
-      ];
-      setTrips(seedTrips);
+      console.error('Failed to load trips:', err);
+      setError('Unable to load trips. Please try again later.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchTrips();
+    let isMounted = true;
+
+    fetchTrips().then(() => {
+      if (!isMounted) return;
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleCreateTrip = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
       const newTripData = {
         title,
@@ -100,15 +77,15 @@ export default function DashboardPage() {
       setTrips((prev) => [createdMock, ...prev]);
       addToast("Created trip in workspace!", "success");
     } finally {
+      setIsSubmitting(false);
       setIsModalOpen(false);
       setTitle("");
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white font-sans overflow-x-hidden pb-16">
+    <div className="min-h-screen bg-[#071C1C] text-white font-sans overflow-x-hidden pb-16 select-none">
       <PlaneCursor />
-      <Navbar />
 
       <main className="max-w-7xl mx-auto px-6 sm:px-12 pt-8">
         {/* Header Bar */}
@@ -129,11 +106,21 @@ export default function DashboardPage() {
           </button>
         </div>
 
+        {error && (
+          <div className="mb-6 p-4 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-between gap-4 text-rose-200 text-xs font-semibold">
+            <span>⚠️ {error}</span>
+            <button onClick={fetchTrips} className="px-4 py-1 rounded-xl bg-rose-500 text-white font-bold">
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Loading & Empty States */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 text-zinc-400 gap-3">
-            <span className="w-8 h-8 border-4 border-cyan-400 border-t-transparent rounded-full animate-spin" />
-            <span className="text-xs font-bold uppercase tracking-wider">Loading trips...</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 py-8">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="h-64 rounded-2xl bg-white/10 border border-white/15 animate-pulse" />
+            ))}
           </div>
         ) : trips.length === 0 ? (
           <div className="bg-slate-900/60 border border-white/10 rounded-2xl p-12 text-center max-w-md mx-auto">
@@ -246,9 +233,14 @@ export default function DashboardPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-extrabold text-xs"
+                  disabled={isSubmitting}
+                  className="px-6 py-2 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-extrabold text-xs flex items-center gap-1 cursor-pointer"
                 >
-                  Create Trip
+                  {isSubmitting ? (
+                    <span className="w-3.5 h-3.5 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    "Create Trip"
+                  )}
                 </button>
               </div>
             </form>
@@ -258,3 +250,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

@@ -3,40 +3,42 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   UserRound,
   MapPin,
-  Calendar,
   Heart,
   CheckCircle2,
   Edit3,
-  Globe,
-  Sparkles,
   Award,
-  Compass,
-  Star,
   ExternalLink,
   ShieldCheck,
   LogOut,
   Plane,
-  Plus,
   Loader2,
 } from "lucide-react";
 import PlaneCursor from "../../components/PlaneCursor";
 import { useAuth } from "../../context/AuthContext";
-import { tripsAPI, userAPI } from "../../services/api"; // Ensure userAPI is exported from your api service
+import { tripsAPI, userAPI } from "../../services/api";
 
 export default function Profile() {
-  const { user, logout, updateUser } = useAuth();
+  const { user, token, logout, updateUser } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect to login if user is not authenticated
+  useEffect(() => {
+    if (!token && !user) {
+      navigate("/login", { replace: true });
+    }
+  }, [token, user, navigate]);
 
   const [activeTab, setActiveTab] = useState("completed"); // 'completed' | 'liked' | 'badges'
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
 
   // Dynamic Data States
   const [userTrips, setUserTrips] = useState([]);
   const [likedPlaces, setLikedPlaces] = useState([]);
 
-  // Editable Profile Form State
+  // Editable Profile Form State initialized directly from real user
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -47,78 +49,100 @@ export default function Profile() {
     coverBg: "",
   });
 
-  // Sync state whenever the authenticated user updates
+  // Sync state strictly with authenticated user data
   useEffect(() => {
     if (user) {
       setFormData({
-        name: user.name || "Explorer User",
-        email: user.email || "user@globetrotter.io",
-        username: user.username || (user.email ? `@${user.email.split("@")[0]}` : "@explorer"),
-        bio: user.bio || "Passport full of stamps & wanderlust in my veins ✈️.",
-        location: user.location || "Global Explorer",
-        avatar: user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.name || "Explorer"}`,
-        coverBg: user.coverBg || "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1920&q=80",
+        name: user.name || "",
+        email: user.email || "",
+        username: user.username || (user.email ? `@${user.email.split("@")[0]}` : ""),
+        bio: user.bio || "",
+        location: user.location || "",
+        avatar: user.avatar || "",
+        coverBg: user.coverBg || "",
       });
     }
   }, [user]);
 
-  // Fetch real User Trips & Saved Places from backend
+  // Fetch real User Profile, Trips & Saved Places from backend API
+  const fetchProfileData = async () => {
+    if (!token && !user) return;
+    setLoading(true);
+    setError(null);
+
+    try {
+      const [tripsRes, placesRes] = await Promise.allSettled([
+        tripsAPI.getAll ? tripsAPI.getAll() : Promise.resolve({ trips: [] }),
+        userAPI?.getSavedPlaces ? userAPI.getSavedPlaces() : Promise.resolve({ places: [] }),
+      ]);
+
+      if (tripsRes.status === "fulfilled") {
+        const fetchedTrips = tripsRes.value?.trips || (Array.isArray(tripsRes.value) ? tripsRes.value : []);
+        setUserTrips(fetchedTrips);
+      } else {
+        setUserTrips([]);
+      }
+
+      if (placesRes.status === "fulfilled") {
+        const fetchedPlaces = placesRes.value?.places || (Array.isArray(placesRes.value) ? placesRes.value : []);
+        setLikedPlaces(fetchedPlaces);
+      } else {
+        setLikedPlaces([]);
+      }
+    } catch (err) {
+      console.error("Error loading user profile data:", err);
+      setError("Failed to sync profile data from backend server.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     let isMounted = true;
-    setLoading(true);
-
-    Promise.allSettled([
-      tripsAPI.getAll ? tripsAPI.getAll() : Promise.resolve({ trips: [] }),
-      userAPI?.getSavedPlaces ? userAPI.getSavedPlaces() : Promise.resolve({ places: [] }),
-    ])
-      .then(([tripsRes, placesRes]) => {
-        if (!isMounted) return;
-
-        if (tripsRes.status === "fulfilled" && tripsRes.value?.trips) {
-          setUserTrips(tripsRes.value.trips);
-        } else if (user?.trips) {
-          setUserTrips(user.trips);
-        }
-
-        if (placesRes.status === "fulfilled" && placesRes.value?.places) {
-          setLikedPlaces(placesRes.value.places);
-        } else if (user?.savedPlaces) {
-          setLikedPlaces(user.savedPlaces);
-        }
-      })
-      .catch((err) => console.error("Error loading user profile data:", err))
-      .finally(() => {
-        if (isMounted) setLoading(false);
-      });
+    fetchProfileData().then(() => {
+      if (!isMounted) return;
+    });
 
     return () => {
       isMounted = false;
     };
-  }, [user]);
+  }, [user, token]);
 
-  // Derived Dynamic Statistics
+  if (!token && !user) {
+    return (
+      <div className="min-h-screen bg-[#071C1C] text-white flex flex-col items-center justify-center p-6 text-center">
+        <h2 className="text-2xl font-black uppercase mb-2">Authentication Required</h2>
+        <p className="text-xs text-zinc-400 mb-6">Please log in to view your profile and trip history.</p>
+        <Link to="/login" className="px-6 py-2.5 rounded-full bg-[#7AF0D2] text-[#063D3A] font-extrabold text-xs uppercase">
+          Go to Login
+        </Link>
+      </div>
+    );
+  }
+
+  // Derived Dynamic Statistics from real user data
   const completedTripsCount = userTrips.length;
-  const milesTraveled = user?.miles_traveled || completedTripsCount * 2850;
+  const milesTraveled = completedTripsCount * 1250;
 
-  // Dynamic Badges based on real user actions
+  // Dynamic Badges calculated strictly from real user activity
   const badges = [
     {
       name: "Globe Trotter",
-      level: completedTripsCount >= 3 ? "Gold" : completedTripsCount > 0 ? "Silver" : "Bronze",
+      level: completedTripsCount >= 5 ? "Gold" : completedTripsCount >= 1 ? "Silver" : "Bronze",
       icon: "🌐",
-      desc: completedTripsCount > 0 ? `Completed ${completedTripsCount} customized itineraries` : "Plan your first trip to unlock",
+      desc: completedTripsCount > 0 ? `Created & completed ${completedTripsCount} itineraries` : "Plan your first trip to unlock",
     },
     {
       name: "Destination Collector",
       level: likedPlaces.length >= 5 ? "Elite" : likedPlaces.length > 0 ? "Explorer" : "Novice",
       icon: "🏖️",
-      desc: likedPlaces.length > 0 ? `Curated ${likedPlaces.length} saved destinations` : "Save your favorite spots to unlock",
+      desc: likedPlaces.length > 0 ? `Curated ${likedPlaces.length} saved destinations` : "Save destinations to unlock",
     },
     {
       name: "Verified Account",
-      level: "Pro",
+      level: "Active",
       icon: "✨",
-      desc: `Member since ${user?.created_at ? new Date(user.created_at).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : "2025"}`,
+      desc: user?.email ? `Authenticated user (${user.email})` : "Active Globetrotter member",
     },
   ];
 
@@ -132,8 +156,6 @@ export default function Profile() {
       }
       if (updateUser) {
         updateUser(formData);
-      } else {
-        localStorage.setItem("globetrotter_user", JSON.stringify({ ...user, ...formData }));
       }
       setIsEditing(false);
     } catch (err) {
@@ -153,12 +175,16 @@ export default function Profile() {
       <PlaneCursor />
 
       {/* HERO COVER HEADER */}
-      <div className="relative h-72 sm:h-96 w-full overflow-hidden">
-        <img
-          src={formData.coverBg}
-          alt="Cover"
-          className="w-full h-full object-cover brightness-75"
-        />
+      <div className="relative h-72 sm:h-96 w-full overflow-hidden bg-slate-900">
+        {formData.coverBg ? (
+          <img
+            src={formData.coverBg}
+            alt="Cover"
+            className="w-full h-full object-cover brightness-75"
+          />
+        ) : (
+          <div className="w-full h-full bg-gradient-to-r from-slate-900 via-[#0D2626] to-slate-950" />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-[#071C1C] via-[#071C1C]/40 to-transparent" />
 
         <div className="absolute top-24 right-6 sm:right-12 z-10 flex items-center gap-3">
@@ -186,13 +212,19 @@ export default function Profile() {
         <div className="bg-[#0D2626] border border-[#5AD9BC]/25 rounded-3xl p-6 sm:p-8 shadow-2xl backdrop-blur-xl mb-6">
           <div className="flex flex-col md:flex-row items-center md:items-end justify-between gap-6">
             <div className="flex flex-col sm:flex-row items-center sm:items-end gap-6 text-center sm:text-left">
-              {/* Dynamic User Avatar */}
+              {/* User Avatar */}
               <div className="relative group">
-                <img
-                  src={formData.avatar}
-                  alt={formData.name}
-                  className="w-32 h-32 sm:w-36 sm:h-36 rounded-full object-cover border-4 border-[#071C1C] shadow-[0_0_35px_rgba(66,214,181,0.5)] bg-[#123131]"
-                />
+                {formData.avatar ? (
+                  <img
+                    src={formData.avatar}
+                    alt={formData.name || "User Avatar"}
+                    className="w-32 h-32 sm:w-36 sm:h-36 rounded-full object-cover border-4 border-[#071C1C] shadow-[0_0_35px_rgba(66,214,181,0.5)] bg-[#123131]"
+                  />
+                ) : (
+                  <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full border-4 border-[#071C1C] shadow-[0_0_35px_rgba(66,214,181,0.5)] bg-[#123131] flex items-center justify-center text-4xl font-black text-[#72F0D0]">
+                    {formData.name ? formData.name.charAt(0).toUpperCase() : <UserRound className="w-16 h-16 text-[#72F0D0]" />}
+                  </div>
+                )}
                 <div
                   onClick={() => setIsEditing(true)}
                   className="absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
@@ -205,26 +237,40 @@ export default function Profile() {
               <div>
                 <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3">
                   <h1 className="text-3xl sm:text-4xl font-black text-white uppercase tracking-tight">
-                    {formData.name}
+                    {formData.name || "Explorer"}
                   </h1>
                   <span className="px-3.5 py-1 rounded-full bg-[#42D6B5]/20 text-[#72F0D0] text-xs font-black uppercase tracking-wider border border-[#42D6B5]/40 flex items-center gap-1.5 shadow">
                     <ShieldCheck className="w-3.5 h-3.5 text-[#72F0D0]" />
-                    <span>Verified Explorer</span>
+                    <span>Member Account</span>
                   </span>
                 </div>
 
                 <p className="text-xs font-bold text-[#72F0D0] mt-1.5 flex items-center justify-center sm:justify-start gap-2 flex-wrap">
-                  <span>{formData.email}</span>
-                  <span>&bull;</span>
-                  <span>{formData.username}</span>
-                  <span>&bull;</span>
-                  <span className="text-zinc-400 font-medium inline-flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-[#42D6B5]" /> {formData.location}
-                  </span>
+                  {formData.email && <span>{formData.email}</span>}
+                  {formData.username && (
+                    <>
+                      <span>&bull;</span>
+                      <span>{formData.username}</span>
+                    </>
+                  )}
+                  {formData.location ? (
+                    <>
+                      <span>&bull;</span>
+                      <span className="text-zinc-400 font-medium inline-flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-[#42D6B5]" /> {formData.location}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-zinc-500 text-[11px] font-normal">Location not set</span>
+                  )}
                 </p>
 
                 <p className="text-xs sm:text-sm text-zinc-300 font-medium max-w-2xl mt-3 leading-relaxed">
-                  &quot;{formData.bio}&quot;
+                  {formData.bio ? (
+                    `"${formData.bio}"`
+                  ) : (
+                    <span className="text-zinc-500 italic">No bio added yet. Click &quot;Edit Profile&quot; to add your bio.</span>
+                  )}
                 </p>
               </div>
             </div>
@@ -254,6 +300,15 @@ export default function Profile() {
             </div>
           </div>
         </div>
+
+        {error && (
+          <div className="mb-6 p-4 rounded-2xl bg-rose-500/20 border border-rose-500/40 flex items-center justify-between gap-4 text-rose-200 text-xs font-semibold">
+            <span>⚠️ {error}</span>
+            <button onClick={fetchProfileData} className="px-4 py-1.5 rounded-xl bg-rose-500 text-white font-bold text-xs hover:bg-rose-600 transition-colors">
+              Retry
+            </button>
+          </div>
+        )}
 
         {/* TAB NAVIGATION */}
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-4 mb-8">
@@ -304,7 +359,7 @@ export default function Profile() {
           </Link>
         </div>
 
-        {/* TAB 1: DYNAMIC TRIPS */}
+        {/* TAB 1: DYNAMIC USER TRIPS */}
         {activeTab === "completed" && (
           <section className="space-y-6">
             {loading ? (
@@ -332,26 +387,30 @@ export default function Profile() {
                   key={trip.id || trip._id}
                   className="group bg-[#0D2626] border border-[#5AD9BC]/25 rounded-3xl overflow-hidden shadow-2xl p-6 sm:p-8 flex flex-col lg:flex-row items-center justify-between gap-8 hover:border-[#42D6B5]/60 hover:shadow-[0_0_35px_rgba(32,201,176,0.3)] transition-all duration-300"
                 >
-                  <div className="w-full lg:w-72 h-48 rounded-2xl overflow-hidden relative shrink-0">
-                    <img
-                      src={trip.cover_image_url || trip.image || "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80"}
-                      alt={trip.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
+                  <div className="w-full lg:w-72 h-48 rounded-2xl overflow-hidden relative shrink-0 bg-slate-900">
+                    {trip.cover_image_url || trip.image ? (
+                      <img
+                        src={trip.cover_image_url || trip.image}
+                        alt={trip.title || "Trip cover"}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-4xl">✈️</div>
+                    )}
                     <div className="absolute top-3 left-3 bg-[#42D6B5] text-[#063D3A] font-black text-[10px] uppercase px-3 py-1 rounded-full shadow">
-                      ✓ Saved Trip
+                      User Trip
                     </div>
                   </div>
 
                   <div className="flex-1 space-y-3 text-left">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="text-xs font-bold text-[#72F0D0]">
-                        📅 {trip.start_date || "Flexible"} &bull; {trip.end_date || "Flexible"}
+                        📅 {trip.start_date && trip.end_date ? `${trip.start_date} — ${trip.end_date}` : "Flexible Dates"}
                       </span>
                     </div>
 
                     <h3 className="text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
-                      {trip.title || trip.name}
+                      {trip.title || trip.name || "Untitled Trip"}
                     </h3>
 
                     <p className="text-xs text-zinc-400 font-medium line-clamp-2">
@@ -386,23 +445,36 @@ export default function Profile() {
         {activeTab === "liked" && (
           <section>
             {likedPlaces.length === 0 ? (
-              <div className="text-center py-12 bg-[#0D2626] rounded-3xl border border-[#5AD9BC]/20">
-                <Heart className="w-10 h-10 text-zinc-500 mx-auto mb-2" />
-                <p className="text-xs text-zinc-400 font-bold uppercase">No saved places yet.</p>
+              <div className="text-center py-16 bg-[#0D2626] rounded-3xl border border-[#5AD9BC]/20 space-y-3">
+                <Heart className="w-10 h-10 text-zinc-500 mx-auto mb-1" />
+                <h3 className="text-lg font-bold text-white uppercase">No Saved Places Yet</h3>
+                <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+                  Explore destinations across the globe and save your favorite spots!
+                </p>
+                <Link
+                  to="/explore"
+                  className="px-6 py-2.5 rounded-full bg-[#20C9B0] text-[#063D3A] font-extrabold text-xs uppercase inline-block mt-2"
+                >
+                  Explore Destinations &rarr;
+                </Link>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {likedPlaces.map((place) => (
+                {likedPlaces.map((place, idx) => (
                   <div
-                    key={place.id || place._id}
+                    key={place.id || place._id || idx}
                     className="group bg-[#0D2626] border border-[#5AD9BC]/20 hover:border-[#42D6B5]/60 rounded-3xl overflow-hidden shadow-xl hover:shadow-[0_0_30px_rgba(32,201,176,0.3)] transition-all duration-300 flex flex-col justify-between"
                   >
-                    <div className="h-56 relative overflow-hidden">
-                      <img
-                        src={place.img || place.image_url}
-                        alt={place.title || place.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                      />
+                    <div className="h-56 relative overflow-hidden bg-slate-900">
+                      {place.img || place.image_url ? (
+                        <img
+                          src={place.img || place.image_url}
+                          alt={place.title || place.name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-4xl">🏖️</div>
+                      )}
                       <div className="absolute top-4 right-4">
                         <span className="px-3 py-1 rounded-full bg-red-500/80 backdrop-blur-md text-white text-xs font-bold shadow">
                           ❤️ Saved
@@ -413,10 +485,10 @@ export default function Profile() {
                     <div className="p-6 flex-1 flex flex-col justify-between text-left">
                       <div>
                         <h3 className="text-xl font-black text-white uppercase tracking-tight mb-1">
-                          {place.title || place.name}
+                          {place.title || place.name || "Saved Destination"}
                         </h3>
                         <p className="text-xs text-zinc-400 font-medium line-clamp-2 mb-4">
-                          {place.desc || place.description}
+                          {place.desc || place.description || "Saved place in your travel collection."}
                         </p>
                       </div>
 
@@ -481,6 +553,7 @@ export default function Profile() {
                 </label>
                 <input
                   type="text"
+                  placeholder="Enter full name"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full bg-[#123131] border border-[#5AD9BC]/30 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#72F0D0]"
@@ -493,6 +566,7 @@ export default function Profile() {
                 </label>
                 <input
                   type="text"
+                  placeholder="e.g. New York, USA"
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                   className="w-full bg-[#123131] border border-[#5AD9BC]/30 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#72F0D0]"
@@ -505,6 +579,7 @@ export default function Profile() {
                 </label>
                 <input
                   type="text"
+                  placeholder="https://..."
                   value={formData.avatar}
                   onChange={(e) => setFormData({ ...formData, avatar: e.target.value })}
                   className="w-full bg-[#123131] border border-[#5AD9BC]/30 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#72F0D0]"
@@ -517,6 +592,7 @@ export default function Profile() {
                 </label>
                 <textarea
                   rows="3"
+                  placeholder="Tell explorers about yourself..."
                   value={formData.bio}
                   onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
                   className="w-full bg-[#123131] border border-[#5AD9BC]/30 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:ring-2 focus:ring-[#72F0D0]"
